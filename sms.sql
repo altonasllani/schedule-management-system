@@ -112,8 +112,7 @@ SELECT table_name FROM information_schema.tables
 WHERE table_schema = 'public';
 
 
-
--- 1) Të dhënat bazë dhe testimi
+-- 1) Të dhënat bazë 
 INSERT INTO roles (name) VALUES ('admin'), ('professor'), ('student');
 
 INSERT INTO users (name, email, password_hash) VALUES 
