@@ -1,0 +1,950 @@
+openapi: 3.0.0
+info:
+  title: Catalog1 API - School Management System
+  description: |
+    Comprehensive API for managing university courses, professors, class sessions, users, and roles.
+    
+    ## Authentication
+    Currently uses simple API key authentication (to be implemented).
+    
+    ## Error Handling
+    - 400: Bad Request - Validation errors
+    - 404: Not Found - Resource not found
+    - 500: Internal Server Error - Server issues
+  version: 1.0.0
+  contact:
+    name: University IT Department
+    email: it-support@university.edu
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3006/api
+    description: Development server
+  - url: https://api.university.edu/catalog1
+    description: Production server
+
+paths:
+  /health:
+    get:
+      summary: Service health check
+      tags: [System]
+      responses:
+        '200':
+          description: Service is running correctly
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok]
+                    example: "ok"
+                  service:
+                    type: string
+                    example: "catalog1"
+                  time:
+                    type: string
+                    format: date-time
+                    example: "2024-01-15T10:30:00Z"
+
+  # ==================== COURSES ====================
+  /courses:
+    get:
+      summary: Get all courses
+      description: Retrieve a list of all courses ordered by ID
+      tags: [Courses]
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Course'
+              example:
+                - id: 1
+                  name: "Mathematics 101"
+                - id: 2
+                  name: "Computer Science Fundamentals"
+    
+    post:
+      summary: Create a new course
+      description: Create a new course with validation
+      tags: [Courses]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseInput'
+            example:
+              name: "Advanced Programming"
+      responses:
+        '201':
+          description: Course created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Course'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /courses/{id}:
+    get:
+      summary: Get course by ID
+      tags: [Courses]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Course ID
+          schema:
+            type: integer
+            minimum: 1
+            example: 1
+      responses:
+        '200':
+          description: Course details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Course'
+        '404':
+          description: Course not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    put:
+      summary: Update course
+      tags: [Courses]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseInput'
+      responses:
+        '200':
+          description: Course updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Course'
+        '400':
+          description: Validation error
+        '404':
+          description: Course not found
+    
+    delete:
+      summary: Delete course
+      tags: [Courses]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Course deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  deleted:
+                    $ref: '#/components/schemas/Course'
+        '404':
+          description: Course not found
+
+  # ==================== PROFESSORS ====================
+  /professors:
+    get:
+      summary: Get all professors
+      tags: [Professors]
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Professor'
+    
+    post:
+      summary: Create a new professor
+      tags: [Professors]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfessorInput'
+            example:
+              name: "Dr. John Smith"
+              email: "john.smith@university.edu"
+      responses:
+        '201':
+          description: Professor created successfully
+        '400':
+          description: Validation error
+
+  /professors/{id}:
+    get:
+      summary: Get professor by ID
+      tags: [Professors]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Professor details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Professor'
+        '404':
+          description: Professor not found
+    
+    put:
+      summary: Update professor
+      tags: [Professors]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfessorInput'
+      responses:
+        '200':
+          description: Professor updated successfully
+        '404':
+          description: Professor not found
+    
+    delete:
+      summary: Delete professor
+      tags: [Professors]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Professor deleted successfully
+        '404':
+          description: Professor not found
+
+  # ==================== SESSIONS ====================
+  /sessions:
+    get:
+      summary: Get all sessions with details
+      description: Retrieve all class sessions with joined course, professor, room, and group information
+      tags: [Sessions]
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SessionWithDetails'
+    
+    post:
+      summary: Create a new class session
+      tags: [Sessions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionInput'
+            example:
+              course_id: 1
+              group_id: 1
+              room_id: 1
+              professor_id: 1
+              semester_id: 1
+              day_of_week: 1
+              start_time: "08:00"
+              end_time: "10:00"
+              week_type: "all"
+      responses:
+        '201':
+          description: Session created successfully
+        '400':
+          description: Validation error
+
+  /sessions/{id}:
+    get:
+      summary: Get session by ID with details
+      tags: [Sessions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Session details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionWithDetails'
+        '404':
+          description: Session not found
+    
+    put:
+      summary: Update session
+      tags: [Sessions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionInput'
+      responses:
+        '200':
+          description: Session updated successfully
+        '404':
+          description: Session not found
+    
+    delete:
+      summary: Delete session
+      tags: [Sessions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Session deleted successfully
+        '404':
+          description: Session not found
+
+  # ==================== USERS ====================
+  /users:
+    get:
+      summary: Get all users (without passwords)
+      tags: [Users]
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+    
+    post:
+      summary: Create a new user
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserInput'
+      responses:
+        '201':
+          description: User created successfully
+        '400':
+          description: Validation error
+
+  /users/{id}:
+    get:
+      summary: Get user by ID
+      tags: [Users]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: User details
+        '404':
+          description: User not found
+    
+    put:
+      summary: Update user
+      tags: [Users]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateInput'
+      responses:
+        '200':
+          description: User updated successfully
+        '404':
+          description: User not found
+    
+    delete:
+      summary: Delete user
+      tags: [Users]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: User deleted successfully
+        '404':
+          description: User not found
+
+  # ==================== ROLES ====================
+  /roles:
+    get:
+      summary: Get all roles
+      tags: [Roles]
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+    
+    post:
+      summary: Create a new role
+      tags: [Roles]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleInput'
+      responses:
+        '201':
+          description: Role created successfully
+        '400':
+          description: Validation error
+
+  /roles/{id}:
+    get:
+      summary: Get role by ID
+      tags: [Roles]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Role details
+        '404':
+          description: Role not found
+    
+    put:
+      summary: Update role
+      tags: [Roles]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleInput'
+      responses:
+        '200':
+          description: Role updated successfully
+        '404':
+          description: Role not found
+    
+    delete:
+      summary: Delete role
+      tags: [Roles]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Role deleted successfully
+        '404':
+          description: Role not found
+
+  # ==================== GROUP-COURSES ====================
+  /group-courses:
+    get:
+      summary: Get all group-course relationships
+      description: Get all group-course mappings with course and group names
+      tags: [Group Courses]
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GroupCourseWithDetails'
+    
+    post:
+      summary: Assign course to group
+      tags: [Group Courses]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupCourseInput'
+      responses:
+        '201':
+          description: Course assigned to group successfully
+        '400':
+          description: Validation error
+
+  /group-courses/{group_id}/{course_id}:
+    delete:
+      summary: Remove course from group
+      tags: [Group Courses]
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - name: course_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Course removed from group successfully
+        '404':
+          description: Relationship not found
+
+  # ==================== USER ROLES ====================
+  /userroles:
+    get:
+      summary: Get all user-role relationships
+      description: Get all user-role mappings with user and role names
+      tags: [User Roles]
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserRoleWithDetails'
+    
+    post:
+      summary: Assign role to user
+      tags: [User Roles]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRoleInput'
+      responses:
+        '201':
+          description: Role assigned to user successfully
+        '400':
+          description: Validation error
+
+  /userroles/{user_id}/{role_id}:
+    delete:
+      summary: Remove role from user
+      tags: [User Roles]
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - name: role_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Role removed from user successfully
+        '404':
+          description: Relationship not found
+
+components:
+  schemas:
+    # Error Schema
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+        details:
+          type: array
+          items:
+            type: string
+          description: Detailed error messages
+
+    # Course Schemas
+    Course:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+          example: 1
+        name:
+          type: string
+          example: "Mathematics 101"
+    
+    CourseInput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: "Advanced Programming"
+          description: Course name must be between 2 and 100 characters
+
+    # Professor Schemas
+    Professor:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+    
+    ProfessorInput:
+      type: object
+      required:
+        - name
+        - email
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+        email:
+          type: string
+          format: email
+
+    # Session Schemas
+    SessionWithDetails:
+      type: object
+      properties:
+        id:
+          type: integer
+        course_id:
+          type: integer
+        group_id:
+          type: integer
+        room_id:
+          type: integer
+        professor_id:
+          type: integer
+        semester_id:
+          type: integer
+        day_of_week:
+          type: integer
+          minimum: 1
+          maximum: 7
+          description: 1=Monday, 7=Sunday
+        start_time:
+          type: string
+          format: time
+        end_time:
+          type: string
+          format: time
+        week_type:
+          type: string
+          enum: [all, even, odd]
+          default: all
+        course_name:
+          type: string
+        group_name:
+          type: string
+        room_name:
+          type: string
+        professor_name:
+          type: string
+        semester_name:
+          type: string
+    
+    SessionInput:
+      type: object
+      required:
+        - course_id
+        - group_id
+        - room_id
+        - professor_id
+        - semester_id
+        - day_of_week
+        - start_time
+        - end_time
+      properties:
+        course_id:
+          type: integer
+          minimum: 1
+        group_id:
+          type: integer
+          minimum: 1
+        room_id:
+          type: integer
+          minimum: 1
+        professor_id:
+          type: integer
+          minimum: 1
+        semester_id:
+          type: integer
+          minimum: 1
+        day_of_week:
+          type: integer
+          minimum: 1
+          maximum: 7
+        start_time:
+          type: string
+          pattern: '^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$'
+        end_time:
+          type: string
+          pattern: '^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$'
+        week_type:
+          type: string
+          enum: [all, even, odd]
+          default: all
+
+    # User Schemas
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        created_at:
+          type: string
+          format: date-time
+    
+    UserInput:
+      type: object
+      required:
+        - name
+        - email
+        - password_hash
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+        email:
+          type: string
+          format: email
+        password_hash:
+          type: string
+          minLength: 6
+          description: Password must be at least 6 characters long
+    
+    UserUpdateInput:
+      type: object
+      required:
+        - name
+        - email
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+        email:
+          type: string
+          format: email
+
+    # Role Schemas
+    Role:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+    
+    RoleInput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 50
+
+    # Group-Course Schemas
+    GroupCourseWithDetails:
+      type: object
+      properties:
+        group_id:
+          type: integer
+        course_id:
+          type: integer
+        group_name:
+          type: string
+        course_name:
+          type: string
+    
+    GroupCourseInput:
+      type: object
+      required:
+        - group_id
+        - course_id
+      properties:
+        group_id:
+          type: integer
+          minimum: 1
+        course_id:
+          type: integer
+          minimum: 1
+
+    # User-Role Schemas
+    UserRoleWithDetails:
+      type: object
+      properties:
+        user_id:
+          type: integer
+        role_id:
+          type: integer
+        user_name:
+          type: string
+        role_name:
+          type: string
+    
+    UserRoleInput:
+      type: object
+      required:
+        - user_id
+        - role_id
+      properties:
+        user_id:
+          type: integer
+          minimum: 1
+        role_id:
+          type: integer
+          minimum: 1
+
+  responses:
+    NotFound:
+      description: The specified resource was not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    ValidationError:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+tags:
+  - name: System
+    description: System health and status endpoints
+  - name: Courses
+    description: Course management endpoints
+  - name: Professors
+    description: Professor management endpoints
+  - name: Sessions
+    description: Class session management endpoints
+  - name: Users
+    description: User management endpoints
+  - name: Roles
+    description: Role management endpoints
+  - name: Group Courses
+    description: Group-course relationship management
+  - name: User Roles
+    description: User-role relationship management
