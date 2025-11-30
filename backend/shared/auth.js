@@ -1,43 +1,80 @@
+// backend/shared/auth.js
 const jwt = require('jsonwebtoken');
 
-// Middleware: kërkon token të vlefshëm
-function requireAuth(req, res, next) {
-  const header = req.headers.authorization || '';
-  const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+/**
+ * Gjeneron një access token për user-in
+ * user: { id, email, role }
+ */
+function signAccessToken(user) {
+  return jwt.sign(
+    {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    },
+    process.env.ACCESS_TOKEN_SECRET,
+    { expiresIn: '15m' } // mund ta ndryshosh
+  );
+}
 
-  if (!token) {
-    return res.status(401).json({ error: 'Unauthorized' });
+/**
+ * Gjeneron një refresh token
+ */
+function signRefreshToken(user) {
+  return jwt.sign(
+    {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    },
+    process.env.REFRESH_TOKEN_SECRET,
+    { expiresIn: '7d' }
+  );
+}
+
+/**
+ * Middleware: kërkon Authorization: Bearer <token>
+ * Nëse token-i është OK → vendos req.user
+ */
+function requireAuth(req, res, next) {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res
+      .status(401)
+      .json({ error: 'Missing or invalid Authorization header' });
   }
 
-  try {
-    const payload = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+  const token = authHeader.split(' ')[1];
 
-    // ruajmë user-in në req për përdorim më vonë
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, payload) => {
+    if (err) {
+      console.error('JWT verify error:', err.message);
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+
+    // payload: { sub, email, role, iat, exp }
     req.user = {
       id: payload.sub,
-      role: payload.role || 'student',
+      email: payload.email,
+      role: payload.role,
     };
 
     next();
-  } catch (err) {
-    console.error('❌ JWT error:', err.message);
-    return res.status(401).json({ error: 'Invalid or expired token' });
-  }
+  });
 }
 
-// Middleware: kontrollon rolin (admin, user, student, …)
-function requireRole(roles = []) {
+/**
+ * Middleware: lejon vetëm user-at me role të caktuara
+ * p.sh. requireRole('admin'), requireRole('admin', 'professor')
+ */
+function requireRole(...allowedRoles) {
   return (req, res, next) => {
-    if (!req.user) {
-      return res.status(401).json({ error: 'Unauthorized' });
+    if (!req.user || !req.user.role) {
+      return res.status(403).json({ error: 'Forbidden' });
     }
 
-    // nëse nuk kemi lista rolesh, lejojmë të gjithë user-at e loguar
-    if (roles.length === 0) {
-      return next();
-    }
-
-    if (!roles.includes(req.user.role)) {
+    if (!allowedRoles.includes(req.user.role)) {
       return res.status(403).json({ error: 'Forbidden' });
     }
 
@@ -46,6 +83,8 @@ function requireRole(roles = []) {
 }
 
 module.exports = {
+  signAccessToken,
+  signRefreshToken,
   requireAuth,
   requireRole,
 };
