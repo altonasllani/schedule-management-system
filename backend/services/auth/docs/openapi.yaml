@@ -1,0 +1,445 @@
+openapi: 3.0.0
+info:
+  title: Auth API - Schedule Management System
+  description: |
+    Auth microservice për Schedule Management System (SMS).
+    Ofron login, register, refresh të token-it dhe menaxhim rolesh për user-at.
+  version: 1.0.0
+  contact:
+    name: Development Team
+    email: dev@schedule-management.com
+
+servers:
+  - url: http://localhost:3001
+    description: Development server (Auth service)
+  - url: https://api.schedule-management.com/auth
+    description: Production server (Auth)
+
+tags:
+  - name: Health
+    description: Health check endpoints
+  - name: Auth
+    description: Operacionet e autentikimit (register, login, me, refresh)
+  - name: Users
+    description: Menaxhimi i përdoruesve dhe roleve (vetëm admin)
+
+paths:
+  /auth/health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Kontrollon statusin e Auth service
+      responses:
+        '200':
+          description: Shërbimi Auth është në gjendje të mirë
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '500':
+          description: Gabim i brendshëm në server
+
+  /auth/register:
+    post:
+      tags:
+        - Auth
+      summary: Regjistron një përdorues të ri
+      description: |
+        Regjistron një user të ri. Automatikisht i caktohet roli "student"
+        nga trigger-i në databazë. Kthen user-in + access/refresh token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Përdoruesi u regjistrua me sukses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Email është i regjistruar tashmë
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Login i përdoruesit
+      description: |
+        Bën autentikimin e user-it me email dhe password.
+        Kthen user-in + access token + refresh token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login i suksesshëm
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /auth/refresh:
+    post:
+      tags:
+        - Auth
+      summary: Rifreskon access token-in
+      description: |
+        Përdor refresh token për të gjeneruar një access token të ri.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Access token i ri u gjenerua me sukses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshTokenResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /auth/me:
+    get:
+      tags:
+        - Auth
+      summary: Kthen përdoruesin aktual
+      description: |
+        Kthen informacionin e user-it që është autentikuar.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Përdoruesi aktual
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /auth/users:
+    get:
+      tags:
+        - Users
+      summary: Lista e të gjithë përdoruesve
+      description: |
+        Kthen listën e të gjithë user-ave me rolin e tyre aktual.
+        Vetëm admin-i ka qasje në këtë endpoint.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista e përdoruesve
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /auth/users/{id}:
+    get:
+      tags:
+        - Users
+      summary: Merr të dhënat e një përdoruesi
+      description: |
+        Kthen informacionin bazë për një user sipas ID-së.
+        Vetëm admin-i ka qasje.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID e user-it
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: Përdoruesi u gjet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /auth/users/{id}/role:
+    patch:
+      tags:
+        - Users
+      summary: Ndryshon rolin e një përdoruesi
+      description: |
+        Ndryshon rolin e user-it (admin, professor, student).
+        Vetëm admin-i ka qasje.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID e user-it
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRoleRequest'
+      responses:
+        '200':
+          description: Roli u përditësua me sukses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateRoleResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "ok"
+        service:
+          type: string
+          example: "auth"
+        time:
+          type: string
+          format: date-time
+        environment:
+          type: string
+          example: "development"
+
+    AuthUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "Admin User"
+        email:
+          type: string
+          format: email
+          example: "admin@uni.edu"
+        role:
+          type: string
+          enum: [admin, professor, student]
+          example: "student"
+
+    RegisterRequest:
+      type: object
+      required:
+        - name
+        - email
+        - password
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+          example: "John Doe"
+        email:
+          type: string
+          format: email
+          example: "john.doe@student.uni.edu"
+        password:
+          type: string
+          minLength: 6
+          maxLength: 100
+          example: "sekret123"
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: "admin@uni.edu"
+        password:
+          type: string
+          minLength: 6
+          maxLength: 100
+          example: "admin123"
+
+    TokenPair:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        refreshToken:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/AuthUser'
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+
+    MeResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/AuthUser'
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    RefreshTokenResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    UserResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/AuthUser'
+
+    UserListResponse:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthUser'
+
+    UpdateUserRoleRequest:
+      type: object
+      required:
+        - role
+      properties:
+        role:
+          type: string
+          enum: [admin, professor, student]
+          example: "professor"
+
+    UpdateRoleResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Roli u përditësua me sukses"
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Gabim gjatë përpunimit të kërkesës"
+
+  responses:
+    BadRequest:
+      description: Të dhëna të pavlefshme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Unauthorized:
+      description: Nuk jeni autentikuar ose token i pavlefshëm
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Forbidden:
+      description: Nuk keni leje për këtë operacion
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFound:
+      description: Burimi i kërkuar nuk u gjet
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    InternalServerError:
+      description: Gabim i brendshëm në server
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
