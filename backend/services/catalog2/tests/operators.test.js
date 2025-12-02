@@ -47,8 +47,8 @@ describe('Operators API', () => {
   describe('POST /api/groups', () => {
     it('should create a new group', async () => {
       const newGroup = {
-        name: 'Test Operator Group',
-        semesterId: 1 // Shto semesterId të detyrueshme
+        name: 'Test Operator Group'
+        // ✅ LËRE: Vetëm 'name' ekziston
       };
 
       const response = await request(BASE_URL)
@@ -65,7 +65,7 @@ describe('Operators API', () => {
     it('should update an existing group', async () => {
       const updatedGroup = {
         name: 'Updated Operator Group'
-        // Mos përfshi fusha që nuk ekzistojnë në databazë
+        // ✅ LËRE: Vetëm 'name' ekziston
       };
 
       const response = await request(BASE_URL)
@@ -81,10 +81,20 @@ describe('Operators API', () => {
   describe('DELETE /api/groups/:id', () => {
     it('should delete a group', async () => {
       const response = await request(BASE_URL)
-        .delete('/api/groups/999') // Përdor ID që nuk ekziston për të shmangur foreign key errors
-        .expect(404); // Prit 404 për ID që nuk ekziston
+        .delete('/api/groups/999')
+        .expect(404);
 
       expect(response.body).toHaveProperty('error');
+    });
+  });
+
+  describe('GET /api/semesters/current/current', () => {
+    it('should get current semester', async () => {
+      const response = await request(BASE_URL)
+        .get('/api/semesters/current/current');
+
+      // Could be 200 or 404 (if no current semester)
+      expect([200, 404]).toContain(response.status);
     });
   });
 });

@@ -17,8 +17,8 @@ describe('Groups API', () => {
   describe('GET /api/groups', () => {
     it('should return all groups', async () => {
       const mockGroups = [
-        { id: 1, name: 'Group A', description: 'First group', semester_id: 1 },
-        { id: 2, name: 'Group B', description: 'Second group', semester_id: 1 }
+        { id: 1, name: 'Group A' },
+        { id: 2, name: 'Group B' }
       ];
 
       Groups.findAll.mockResolvedValue(mockGroups);
@@ -41,7 +41,7 @@ describe('Groups API', () => {
 
   describe('GET /api/groups/:id', () => {
     it('should return a group by id', async () => {
-      const mockGroup = { id: 1, name: 'Group A', semester_id: 1 };
+      const mockGroup = { id: 1, name: 'Group A' };
       Groups.findById.mockResolvedValue(mockGroup);
 
       const response = await request(app).get('/api/groups/1');
@@ -62,7 +62,7 @@ describe('Groups API', () => {
 
   describe('POST /api/groups', () => {
     it('should create a new group', async () => {
-      const newGroup = { name: 'Group C', description: 'New group', semester_id: 1 };
+      const newGroup = { name: 'Group C' };
       const createdGroup = { id: 3, ...newGroup };
 
       Groups.create.mockResolvedValue(createdGroup);
@@ -76,7 +76,7 @@ describe('Groups API', () => {
     });
 
     it('should return 400 for invalid group data', async () => {
-      const invalidGroup = { name: '', semester_id: 'invalid' };
+      const invalidGroup = { name: '' };
 
       const response = await request(app)
         .post('/api/groups')
@@ -84,6 +84,56 @@ describe('Groups API', () => {
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('error');
+    });
+  });
+
+  describe('PUT /api/groups/:id', () => {
+    it('should update an existing group', async () => {
+      const updatedGroup = { name: 'Updated Group A' };
+      const mockUpdated = { id: 1, ...updatedGroup };
+
+      Groups.update.mockResolvedValue(mockUpdated);
+
+      const response = await request(app)
+        .put('/api/groups/1')
+        .send(updatedGroup);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual(mockUpdated);
+    });
+
+    it('should return 404 if group not found', async () => {
+      Groups.update.mockResolvedValue(null);
+
+      const response = await request(app)
+        .put('/api/groups/999')
+        .send({ name: 'Non-existent' });
+
+      expect(response.status).toBe(404);
+      expect(response.body.error).toBe('Group not found');
+    });
+  });
+
+  describe('DELETE /api/groups/:id', () => {
+    it('should delete a group', async () => {
+      const deletedGroup = { id: 1, name: 'Group A' };
+      Groups.delete.mockResolvedValue(deletedGroup);
+
+      const response = await request(app)
+        .delete('/api/groups/1');
+
+      expect(response.status).toBe(200);
+      expect(response.body.message).toBe('Group deleted successfully');
+    });
+
+    it('should return 404 if group not found', async () => {
+      Groups.delete.mockResolvedValue(null);
+
+      const response = await request(app)
+        .delete('/api/groups/999');
+
+      expect(response.status).toBe(404);
+      expect(response.body.error).toBe('Group not found');
     });
   });
 });

@@ -7,6 +7,11 @@ const semestersController = require('../controllers/semesters.controller');
 // @access  Public
 router.get('/', semestersController.getAllSemesters);
 
+// @route   GET /api/semesters/current
+// @desc    Merr semestrin aktual
+// @access  Public
+router.get('/current', semestersController.getCurrentSemester); // ✅ KORRIGJUAR: /current jo /current/current
+
 // @route   GET /api/semesters/:id
 // @desc    Merr semestër sipas ID
 // @access  Public

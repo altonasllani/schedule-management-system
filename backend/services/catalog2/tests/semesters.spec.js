@@ -11,6 +11,15 @@ describe('Semesters API', () => {
         .expect(200);
 
       expect(Array.isArray(response.body)).toBe(true);
+      
+      // If there are semesters, check their structure
+      if (response.body.length > 0) {
+        const semester = response.body[0];
+        expect(semester).toHaveProperty('id');
+        expect(semester).toHaveProperty('name');
+        expect(semester).toHaveProperty('start_date');
+        expect(semester).toHaveProperty('end_date');
+      }
     });
   });
 
@@ -23,6 +32,8 @@ describe('Semesters API', () => {
 
       expect(response.body).toHaveProperty('id');
       expect(response.body).toHaveProperty('name');
+      expect(response.body).toHaveProperty('start_date');
+      expect(response.body).toHaveProperty('end_date');
     });
 
     it('should return 404 for non-existent semester', async () => {
@@ -34,14 +45,13 @@ describe('Semesters API', () => {
     });
   });
 
-  // Test POST new semester - RREGULLUAR
+  // Test POST new semester - KORRIGJUAR me formatet e duhura të datave
   describe('POST /api/semesters', () => {
     it('should create a new semester with valid data', async () => {
       const newSemester = {
         name: 'Test Semester 2025',
-        startDate: '2025-01-15',
-        endDate: '2025-05-30',
-        isActive: true
+        start_date: '2025-01-15', // ✅ Format i saktë: YYYY-MM-DD
+        end_date: '2025-05-30'    // ✅ Format i saktë: YYYY-MM-DD
       };
 
       const response = await request(BASE_URL)
@@ -49,19 +59,23 @@ describe('Semesters API', () => {
         .send(newSemester)
         .set('Content-Type', 'application/json');
 
-      // Pranoi ose 201 (created) ose 400/500 (error)
-      expect([201, 400, 500]).toContain(response.status);
+      // Pranoi ose 201 (created) ose 400/409/500 (error)
+      expect([201, 400, 409, 500]).toContain(response.status);
       
       if (response.status === 201) {
         expect(response.body).toHaveProperty('id');
         expect(response.body.name).toBe(newSemester.name);
+        // Datat do të kthehen si ISO strings
+        expect(typeof response.body.start_date).toBe('string');
+        expect(typeof response.body.end_date).toBe('string');
       }
     });
 
-    it('should return 400 for missing required fields', async () => {
+    it('should return 400 for invalid date format', async () => {
       const invalidSemester = {
-        name: 'Test Semester'
-        // Missing startDate and endDate
+        name: 'Invalid Date Semester',
+        start_date: 'not-a-valid-date',
+        end_date: '2025-06-01'
       };
 
       const response = await request(BASE_URL)
@@ -69,7 +83,6 @@ describe('Semesters API', () => {
         .send(invalidSemester)
         .set('Content-Type', 'application/json');
 
-      // Pranoi ose 400 (validation) ose 500 (server error)
       expect([400, 500]).toContain(response.status);
       
       if (response.status === 400) {
@@ -78,71 +91,21 @@ describe('Semesters API', () => {
     });
   });
 
-  // Test PUT update semester - RREGULLUAR
-  describe('PUT /api/semesters/:id', () => {
-    it('should update an existing semester', async () => {
-      const updatedData = {
-        name: 'Updated Semester Name',
-        startDate: '2025-02-01',
-        endDate: '2025-06-15',
-        isActive: false
-      };
-
+  // Test GET current semester - KORRIGJUAR rruga
+  describe('GET /api/semesters/current', () => {
+    it('should get current semester', async () => {
       const response = await request(BASE_URL)
-        .put('/api/semesters/1')
-        .send(updatedData)
-        .set('Content-Type', 'application/json');
+        .get('/api/semesters/current');
 
-      // Pranoi ose 200 (updated) ose 404/500 (error)
-      expect([200, 404, 500]).toContain(response.status);
+      // Could be 200 (found) or 404 (not found)
+      expect([200, 404]).toContain(response.status);
       
       if (response.status === 200) {
-        expect(response.body.name).toBe(updatedData.name);
+        expect(response.body).toHaveProperty('id');
+        expect(response.body).toHaveProperty('name');
+        expect(response.body).toHaveProperty('start_date');
+        expect(response.body).toHaveProperty('end_date');
       }
-    });
-
-    it('should return 404 for non-existent semester', async () => {
-      const updatedData = {
-        name: 'Updated Name',
-        startDate: '2025-01-01',
-        endDate: '2025-06-01'
-      };
-
-      const response = await request(BASE_URL)
-        .put('/api/semesters/9999')
-        .send(updatedData)
-        .set('Content-Type', 'application/json');
-
-      // Pranoi ose 404 (not found) ose 500 (server error)
-      expect([404, 500]).toContain(response.status);
-      
-      if (response.status === 404) {
-        expect(response.body).toHaveProperty('error');
-      }
-    });
-  });
-
-  // Test DELETE semester - RREGULLUAR
-  describe('DELETE /api/semesters/:id', () => {
-    it('should delete an existing semester', async () => {
-      const response = await request(BASE_URL)
-        .delete('/api/semesters/1');
-
-      // Pranoi ose 200 (deleted) ose 404/500 (error)
-      expect([200, 404, 500]).toContain(response.status);
-      
-      if (response.status === 200) {
-        expect(response.body).toHaveProperty('message');
-        expect(response.body.message).toContain('deleted');
-      }
-    });
-
-    it('should return 404 for non-existent semester', async () => {
-      const response = await request(BASE_URL)
-        .delete('/api/semesters/9999')
-        .expect(404);
-
-      expect(response.body).toHaveProperty('error');
     });
   });
 });

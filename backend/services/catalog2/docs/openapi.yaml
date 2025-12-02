@@ -3,34 +3,43 @@ info:
   title: Catalog2 API - Resource Management
   description: |
     API për menaxhimin e burimeve (grupe, dhoma, semestra) në Schedule Management System.
+    Ky shërbim menaxhon entitetet bazë të sistemit të orareve.
   version: 1.0.0
   contact:
     name: Development Team
     email: dev@schedule-management.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
 
 servers:
   - url: http://localhost:3007
     description: Development server
   - url: https://api.schedule-management.com/catalog2
     description: Production server
+  - url: http://localhost:3000/catalog2
+    description: Gateway proxy
 
 tags:
   - name: Health
     description: Health check endpoints
   - name: Groups
-    description: Menaxhimi i grupeve
+    description: Menaxhimi i grupeve të studentëve
   - name: Rooms
-    description: Menaxhimi i dhomave
+    description: Menaxhimi i dhomave/mbrapavendëve
   - name: Semesters
-    description: Menaxhimi i semestrave
+    description: Menaxhimi i semestrave akademike
 
 paths:
+  # ============================================
+  # HEALTH ENDPOINTS
+  # ============================================
   /health:
     get:
       tags:
         - Health
       summary: Health check
-      description: Kontrollon statusin e shërbimit
+      description: Kontrollon statusin e shërbimit dhe lidhjen me databazën
       responses:
         '200':
           description: Shërbimi është në gjendje të mirë
@@ -40,13 +49,37 @@ paths:
                 $ref: '#/components/schemas/HealthResponse'
         '500':
           description: Gabim i brendshëm në server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
+  # ============================================
+  # GROUPS ENDPOINTS
+  # ============================================
   /groups:
     get:
       tags:
         - Groups
       summary: Merr të gjitha grupet
-      description: Kthen listën e të gjitha grupeve
+      description: Kthen listën e të gjitha grupeve të studentëve
+      parameters:
+        - name: sort
+          in: query
+          required: false
+          description: Fusha për sortim
+          schema:
+            type: string
+            enum: [id, name]
+            default: id
+        - name: order
+          in: query
+          required: false
+          description: Renditja e sortimit
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
       responses:
         '200':
           description: Lista e suksesshme e grupeve
@@ -58,12 +91,16 @@ paths:
                   $ref: '#/components/schemas/Group'
         '500':
           description: Gabim i brendshëm në server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
     post:
       tags:
         - Groups
       summary: Krijo grup të ri
-      description: Krijo një grup të ri
+      description: Krijo një grup të ri të studentëve
       requestBody:
         required: true
         content:
@@ -79,8 +116,18 @@ paths:
                 $ref: '#/components/schemas/Group'
         '400':
           description: Të dhëna të pavlefshme
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Grupi me këtë emër ekziston tashmë
         '500':
           description: Gabim i brendshëm në server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /groups/{id}:
     get:
@@ -95,6 +142,7 @@ paths:
           description: ID e grupit
           schema:
             type: integer
+            minimum: 1
             example: 1
       responses:
         '200':
@@ -105,8 +153,16 @@ paths:
                 $ref: '#/components/schemas/Group'
         '404':
           description: Grupi nuk u gjet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           description: Gabim i brendshëm në server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
     put:
       tags:
@@ -120,6 +176,7 @@ paths:
           description: ID e grupit
           schema:
             type: integer
+            minimum: 1
             example: 1
       requestBody:
         required: true
@@ -136,10 +193,24 @@ paths:
                 $ref: '#/components/schemas/Group'
         '400':
           description: Të dhëna të pavlefshme
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Grupi nuk u gjet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Grupi me këtë emër ekziston tashmë
         '500':
           description: Gabim i brendshëm në server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
     delete:
       tags:
@@ -153,6 +224,7 @@ paths:
           description: ID e grupit
           schema:
             type: integer
+            minimum: 1
             example: 1
       responses:
         '200':
@@ -163,15 +235,43 @@ paths:
                 $ref: '#/components/schemas/DeleteResponse'
         '404':
           description: Grupi nuk u gjet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           description: Gabim i brendshëm në server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
+  # ============================================
+  # ROOMS ENDPOINTS
+  # ============================================
   /rooms:
     get:
       tags:
         - Rooms
       summary: Merr të gjitha dhomat
-      description: Kthen listën e të gjitha dhomave
+      description: Kthen listën e të gjitha dhomave/mbrapavendëve
+      parameters:
+        - name: min_capacity
+          in: query
+          required: false
+          description: Kapaciteti minimal
+          schema:
+            type: integer
+            minimum: 1
+            example: 20
+        - name: sort
+          in: query
+          required: false
+          description: Fusha për sortim
+          schema:
+            type: string
+            enum: [id, name, capacity]
+            default: id
       responses:
         '200':
           description: Lista e suksesshme e dhomave
@@ -183,12 +283,16 @@ paths:
                   $ref: '#/components/schemas/Room'
         '500':
           description: Gabim i brendshëm në server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
     post:
       tags:
         - Rooms
       summary: Krijo dhomë të re
-      description: Krijo një dhomë të re
+      description: Krijo një dhomë/mbrapavend të ri
       requestBody:
         required: true
         content:
@@ -204,8 +308,18 @@ paths:
                 $ref: '#/components/schemas/Room'
         '400':
           description: Të dhëna të pavlefshme
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Dhomë me këtë emër ekziston tashmë
         '500':
           description: Gabim i brendshëm në server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /rooms/{id}:
     get:
@@ -220,6 +334,7 @@ paths:
           description: ID e dhomës
           schema:
             type: integer
+            minimum: 1
             example: 1
       responses:
         '200':
@@ -230,15 +345,132 @@ paths:
                 $ref: '#/components/schemas/Room'
         '404':
           description: Dhomë nuk u gjet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           description: Gabim i brendshëm në server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
+    put:
+      tags:
+        - Rooms
+      summary: Përditëso dhomë
+      description: Përditëson të dhënat e një dhome ekzistuese
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID e dhomës
+          schema:
+            type: integer
+            minimum: 1
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRoomRequest'
+      responses:
+        '200':
+          description: Dhomë u përditësua me sukses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+        '400':
+          description: Të dhëna të pavlefshme
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Dhomë nuk u gjet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Dhomë me këtë emër ekziston tashmë
+        '500':
+          description: Gabim i brendshëm në server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Rooms
+      summary: Fshi dhomë
+      description: Fshin një dhomë ekzistuese
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID e dhomës
+          schema:
+            type: integer
+            minimum: 1
+            example: 1
+      responses:
+        '200':
+          description: Dhomë u fshi me sukses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+        '404':
+          description: Dhomë nuk u gjet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Gabim i brendshëm në server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ============================================
+  # SEMESTERS ENDPOINTS
+  # ============================================
   /semesters:
     get:
       tags:
         - Semesters
       summary: Merr të gjitha semestrat
-      description: Kthen listën e të gjitha semestrave
+      description: Kthen listën e të gjitha semestrave akademike
+      parameters:
+        - name: active_only
+          in: query
+          required: false
+          description: Kthe vetëm semestrat aktive
+          schema:
+            type: boolean
+            default: false
+        - name: sort
+          in: query
+          required: false
+          description: Fusha për sortim
+          schema:
+            type: string
+            enum: [id, name, start_date]
+            default: start_date
+        - name: order
+          in: query
+          required: false
+          description: Renditja e sortimit
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
       responses:
         '200':
           description: Lista e suksesshme e semestrave
@@ -250,12 +482,16 @@ paths:
                   $ref: '#/components/schemas/Semester'
         '500':
           description: Gabim i brendshëm në server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
     post:
       tags:
         - Semesters
       summary: Krijo semestër të ri
-      description: Krijo një semestër të ri
+      description: Krijo një semestër akademik të ri
       requestBody:
         required: true
         content:
@@ -271,16 +507,173 @@ paths:
                 $ref: '#/components/schemas/Semester'
         '400':
           description: Të dhëna të pavlefshme
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Semestri me këtë emër ekziston tashmë
         '500':
           description: Gabim i brendshëm në server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /semesters/current:
+    get:
+      tags:
+        - Semesters
+      summary: Merr semestrin aktual
+      description: Kthen semestrin aktual bazuar në datën e sotme
+      responses:
+        '200':
+          description: Semestri aktual
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Semester'
+        '404':
+          description: Nuk u gjet semestër aktual
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Gabim i brendshëm në server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /semesters/{id}:
+    get:
+      tags:
+        - Semesters
+      summary: Merr semestër sipas ID
+      description: Kthen të dhënat e një semestri specifik
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID e semestrit
+          schema:
+            type: integer
+            minimum: 1
+            example: 1
+      responses:
+        '200':
+          description: Të dhënat e semestrit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Semester'
+        '404':
+          description: Semestri nuk u gjet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Gabim i brendshëm në server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Semesters
+      summary: Përditëso semestër
+      description: Përditëson të dhënat e një semestri ekzistues
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID e semestrit
+          schema:
+            type: integer
+            minimum: 1
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSemesterRequest'
+      responses:
+        '200':
+          description: Semestri u përditësua me sukses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Semester'
+        '400':
+          description: Të dhëna të pavlefshme
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Semestri nuk u gjet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Semestri me këtë emër ekziston tashmë
+        '500':
+          description: Gabim i brendshëm në server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Semesters
+      summary: Fshi semestër
+      description: Fshin një semestër ekzistues
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID e semestrit
+          schema:
+            type: integer
+            minimum: 1
+            example: 1
+      responses:
+        '200':
+          description: Semestri u fshi me sukses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+        '404':
+          description: Semestri nuk u gjet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Gabim i brendshëm në server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
 components:
   schemas:
+    # ============================================
+    # HEALTH SCHEMAS
+    # ============================================
     HealthResponse:
       type: object
       properties:
         status:
           type: string
+          enum: [ok, error]
           example: "ok"
         service:
           type: string
@@ -288,92 +681,86 @@ components:
         timestamp:
           type: string
           format: date-time
+          example: "2025-12-02T01:00:00.000Z"
         environment:
           type: string
           example: "development"
+        database:
+          type: string
+          enum: [connected, disconnected]
+          example: "connected"
+      required:
+        - status
+        - service
+        - timestamp
+        - environment
 
+    # ============================================
+    # GROUPS SCHEMAS
+    # ============================================
     Group:
       type: object
       properties:
         id:
           type: integer
+          format: int64
           example: 1
         name:
           type: string
           example: "Grupi A"
-        description:
-          type: string
-          example: "Grupi i parë i studentëve"
-        semester_id:
-          type: integer
-          example: 1
+      required:
+        - id
+        - name
 
     CreateGroupRequest:
       type: object
-      required:
-        - name
-        - semester_id
       properties:
         name:
           type: string
-          minLength: 1
+          minLength: 2
           maxLength: 100
           example: "Grupi i ri"
-        description:
-          type: string
-          maxLength: 500
-          example: "Përshkrim i grupit të ri"
-        semester_id:
-          type: integer
-          minimum: 1
-          example: 1
+      required:
+        - name
 
     UpdateGroupRequest:
       type: object
       properties:
         name:
           type: string
-          minLength: 1
+          minLength: 2
           maxLength: 100
           example: "Grupi i përditësuar"
-        description:
-          type: string
-          maxLength: 500
-          example: "Përshkrim i përditësuar"
-        semester_id:
-          type: integer
-          minimum: 1
-          example: 1
 
+    # ============================================
+    # ROOMS SCHEMAS
+    # ============================================
     Room:
       type: object
       properties:
         id:
           type: integer
+          format: int64
           example: 1
         name:
           type: string
           example: "A101"
         capacity:
           type: integer
+          minimum: 1
+          maximum: 1000
           example: 30
-        location:
-          type: string
-          example: "Ndërtesa A"
-        equipment:
-          type: string
-          example: "Projector, Whiteboard"
+      required:
+        - id
+        - name
+        - capacity
 
     CreateRoomRequest:
       type: object
-      required:
-        - name
-        - capacity
-        - location
       properties:
         name:
           type: string
-          minLength: 1
+          minLength: 2
           maxLength: 100
           example: "A101"
         capacity:
@@ -381,67 +768,100 @@ components:
           minimum: 1
           maximum: 1000
           example: 30
-        location:
-          type: string
-          minLength: 1
-          maxLength: 200
-          example: "Ndërtesa A"
-        equipment:
-          type: string
-          maxLength: 500
-          example: "Projector, Whiteboard"
+      required:
+        - name
+        - capacity
 
+    UpdateRoomRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: "A101"
+        capacity:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          example: 40
+
+    # ============================================
+    # SEMESTERS SCHEMAS
+    # ============================================
     Semester:
       type: object
       properties:
         id:
           type: integer
+          format: int64
           example: 1
         name:
           type: string
           example: "Semestri Viti 2024-2025"
         start_date:
           type: string
-          format: date-time
-          example: "2024-09-01T00:00:00Z"
+          format: date
+          example: "2024-09-01"
         end_date:
           type: string
-          format: date-time
-          example: "2025-01-31T23:59:59Z"
-        is_active:
-          type: boolean
-          example: true
-
-    CreateSemesterRequest:
-      type: object
+          format: date
+          example: "2025-01-31"
       required:
+        - id
         - name
         - start_date
         - end_date
+
+    CreateSemesterRequest:
+      type: object
       properties:
         name:
           type: string
-          minLength: 1
+          minLength: 2
           maxLength: 100
           example: "Semestri Viti 2024-2025"
         start_date:
           type: string
-          format: date-time
-          example: "2024-09-01T00:00:00Z"
+          format: date
+          example: "2024-09-01"
         end_date:
           type: string
-          format: date-time
-          example: "2025-01-31T23:59:59Z"
-        is_active:
-          type: boolean
-          example: true
+          format: date
+          example: "2025-01-31"
+      required:
+        - name
+        - start_date
+        - end_date
 
+    UpdateSemesterRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: "Semestri Viti 2024-2025"
+        start_date:
+          type: string
+          format: date
+          example: "2024-09-01"
+        end_date:
+          type: string
+          format: date
+          example: "2025-01-31"
+
+    # ============================================
+    # COMMON SCHEMAS
+    # ============================================
     DeleteResponse:
       type: object
       properties:
         message:
           type: string
-          example: "Group deleted successfully"
+          example: "Resource deleted successfully"
+      required:
+        - message
 
     ErrorResponse:
       type: object
@@ -449,6 +869,18 @@ components:
         error:
           type: string
           example: "Error message description"
+        details:
+          type: array
+          items:
+            type: string
+          example: ["Field 'name' is required", "Field 'capacity' must be greater than 0"]
+        timestamp:
+          type: string
+          format: date-time
+          example: "2025-12-02T01:00:00.000Z"
+      required:
+        - error
+        - timestamp
 
   responses:
     NotFound:
@@ -457,6 +889,9 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Resource not found"
+            timestamp: "2025-12-02T01:00:00.000Z"
 
     BadRequest:
       description: Të dhëna të pavlefshme
@@ -464,6 +899,20 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Validation failed"
+            details: ["Field 'name' is required"]
+            timestamp: "2025-12-02T01:00:00.000Z"
+
+    Conflict:
+      description: Konflikt (duplicate resource)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Resource already exists"
+            timestamp: "2025-12-02T01:00:00.000Z"
 
     InternalServerError:
       description: Gabim i brendshëm në server
@@ -471,3 +920,18 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Internal server error"
+            timestamp: "2025-12-02T01:00:00.000Z"
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Përdorni JWT token për autorizim.
+        Format: `Bearer <token>`
+
+security:
+  - BearerAuth: []

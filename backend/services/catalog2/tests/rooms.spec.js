@@ -3,12 +3,10 @@ const express = require('express');
 const roomsRoute = require('../routes/rooms.route');
 const Rooms = require('../models/rooms.model');
 
-// Krijo app Express për testim
 const app = express();
 app.use(express.json());
 app.use('/api/rooms', roomsRoute);
 
-// Mock modelin e rooms
 jest.mock('../models/rooms.model');
 
 describe('Rooms API', () => {
@@ -19,20 +17,8 @@ describe('Rooms API', () => {
   describe('GET /api/rooms', () => {
     it('should return all rooms', async () => {
       const mockRooms = [
-        { 
-          id: 1, 
-          name: 'Room A', 
-          capacity: 30, 
-          location: 'Building A', 
-          equipment: 'Projector' 
-        },
-        { 
-          id: 2, 
-          name: 'Room B', 
-          capacity: 50, 
-          location: 'Building B', 
-          equipment: 'Computers' 
-        }
+        { id: 1, name: 'Room A', capacity: 30 },
+        { id: 2, name: 'Room B', capacity: 50 }
       ];
 
       Rooms.findAll.mockResolvedValue(mockRooms);
@@ -56,13 +42,7 @@ describe('Rooms API', () => {
 
   describe('GET /api/rooms/:id', () => {
     it('should return a room by id', async () => {
-      const mockRoom = { 
-        id: 1, 
-        name: 'Room A', 
-        capacity: 30, 
-        location: 'Building A' 
-      };
-
+      const mockRoom = { id: 1, name: 'Room A', capacity: 30 };
       Rooms.findById.mockResolvedValue(mockRoom);
 
       const response = await request(app).get('/api/rooms/1');
@@ -93,12 +73,7 @@ describe('Rooms API', () => {
 
   describe('POST /api/rooms', () => {
     it('should create a new room', async () => {
-      const newRoom = { 
-        name: 'Room C', 
-        capacity: 40, 
-        location: 'Building C', 
-        equipment: 'Whiteboard' 
-      };
+      const newRoom = { name: 'Room C', capacity: 40 };
       const createdRoom = { id: 3, ...newRoom };
 
       Rooms.create.mockResolvedValue(createdRoom);
@@ -113,11 +88,7 @@ describe('Rooms API', () => {
     });
 
     it('should return 400 for invalid room data', async () => {
-      const invalidRoom = { 
-        name: '', // Name empty - invalid
-        capacity: 0, // Capacity 0 - invalid
-        location: '' // Location empty - invalid
-      };
+      const invalidRoom = { name: '', capacity: 0 };
 
       const response = await request(app)
         .post('/api/rooms')
@@ -132,11 +103,7 @@ describe('Rooms API', () => {
 
       const response = await request(app)
         .post('/api/rooms')
-        .send({
-          name: 'Room D',
-          capacity: 25,
-          location: 'Building D'
-        });
+        .send({ name: 'Room D', capacity: 25 });
 
       expect(response.status).toBe(500);
       expect(response.body).toHaveProperty('error');
@@ -145,29 +112,18 @@ describe('Rooms API', () => {
 
   describe('PUT /api/rooms/:id', () => {
     it('should update an existing room', async () => {
-      const updatedRoom = { 
-        id: 1, 
-        name: 'Updated Room A', 
-        capacity: 35, 
-        location: 'Building A Updated' 
-      };
-
+      const updatedRoom = { id: 1, name: 'Updated Room A', capacity: 35 };
       Rooms.update.mockResolvedValue(updatedRoom);
 
       const response = await request(app)
         .put('/api/rooms/1')
-        .send({
-          name: 'Updated Room A',
-          capacity: 35,
-          location: 'Building A Updated'
-        });
+        .send({ name: 'Updated Room A', capacity: 35 });
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual(updatedRoom);
       expect(Rooms.update).toHaveBeenCalledWith('1', {
         name: 'Updated Room A',
-        capacity: 35,
-        location: 'Building A Updated'
+        capacity: 35
       });
     });
 
@@ -176,11 +132,7 @@ describe('Rooms API', () => {
 
       const response = await request(app)
         .put('/api/rooms/999')
-        .send({
-          name: 'Non-existent Room',
-          capacity: 10,
-          location: 'Nowhere'
-        });
+        .send({ name: 'Non-existent Room', capacity: 10 });
 
       expect(response.status).toBe(404);
       expect(response.body).toHaveProperty('error', 'Room not found');

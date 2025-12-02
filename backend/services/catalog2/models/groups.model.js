@@ -7,7 +7,8 @@ const Groups = {
       const result = await pool.query('SELECT * FROM groups ORDER BY id');
       return result.rows;
     } catch (error) {
-      throw new Error(`Error fetching groups: ${error.message}`);
+      console.error('Error in Groups.findAll:', error);
+      throw error;
     }
   },
 
@@ -17,45 +18,52 @@ const Groups = {
       const result = await pool.query('SELECT * FROM groups WHERE id = $1', [id]);
       return result.rows[0];
     } catch (error) {
-      throw new Error(`Error fetching group with ID ${id}: ${error.message}`);
+      console.error('Error in Groups.findById:', error);
+      throw error;
     }
   },
 
-  // Krijo grup të ri
+  // Krijo grup të ri - VETËM 'name' (struktura aktuale e databazës)
   async create(groupData) {
     try {
-      const { name, description, semester_id } = groupData;
+      const { name } = groupData; // ✅ Vetëm 'name' ekziston në skemën tuaj aktuale
       const result = await pool.query(
-        'INSERT INTO groups (name, description, semester_id) VALUES ($1, $2, $3) RETURNING *',
-        [name, description, semester_id]
+        'INSERT INTO groups (name) VALUES ($1) RETURNING *',
+        [name]
       );
       return result.rows[0];
     } catch (error) {
-      throw new Error(`Error creating group: ${error.message}`);
+      console.error('Error in Groups.create:', error);
+      throw error;
     }
   },
 
-  // Përditëso grup ekzistues
+  // Përditëso grup ekzistues - VETËM 'name'
   async update(id, groupData) {
     try {
-      const { name, description, semester_id } = groupData;
+      const { name } = groupData; // ✅ Vetëm 'name' ekziston
       const result = await pool.query(
-        'UPDATE groups SET name = $1, description = $2, semester_id = $3 WHERE id = $4 RETURNING *',
-        [name, description, semester_id, id]
+        'UPDATE groups SET name = $1 WHERE id = $2 RETURNING *',
+        [name, id]
       );
       return result.rows[0];
     } catch (error) {
-      throw new Error(`Error updating group with ID ${id}: ${error.message}`);
+      console.error('Error in Groups.update:', error);
+      throw error;
     }
   },
 
   // Fshi grup
   async delete(id) {
     try {
-      const result = await pool.query('DELETE FROM groups WHERE id = $1 RETURNING *', [id]);
+      const result = await pool.query(
+        'DELETE FROM groups WHERE id = $1 RETURNING *',
+        [id]
+      );
       return result.rows[0];
     } catch (error) {
-      throw new Error(`Error deleting group with ID ${id}: ${error.message}`);
+      console.error('Error in Groups.delete:', error);
+      throw error;
     }
   }
 };

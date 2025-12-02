@@ -79,6 +79,21 @@ const semestersController = {
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
+  },
+
+  // ✅ Shto metodën për semestrin aktual që mungonte!
+  async getCurrentSemester(req, res) {
+    try {
+      const semester = await Semesters.findCurrent();
+      
+      if (!semester) {
+        return res.status(404).json({ error: 'No active semester found' });
+      }
+      
+      res.json(semester);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
   }
 };
 
