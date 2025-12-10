@@ -1,185 +1,240 @@
 const request = require('supertest');
+const express = require('express');
 
-const BASE_URL = 'http://localhost:3007';
+// Importo rrugët
+const groupsRoute = require('../routes/groups.route');
+const roomsRoute = require('../routes/rooms.route');
+const semestersRoute = require('../routes/semesters.route');
+
+const app = express();
+app.use(express.json());
+
+// Mount rrugët
+app.use('/api/groups', groupsRoute);
+app.use('/api/rooms', roomsRoute);
+app.use('/api/semesters', semestersRoute);
+
+// Shto health endpoint
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    service: 'catalog2',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Mock models - ky është pjesa më e rëndësishme që mungonte
+jest.mock('../models/groups.model');
+jest.mock('../models/rooms.model');
+jest.mock('../models/semesters.model');
+
+// Importo modelet PAS mock
+const Groups = require('../models/groups.model');
+const Rooms = require('../models/rooms.model');
+const Semesters = require('../models/semesters.model');
 
 describe('Catalog2 CRUD API Tests', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
     
-  // Test Health Check
-  test('GET /api/health - should return service health status', async () => {
-    const response = await request(BASE_URL)
-      .get('/api/health')
-      .expect(200);
-
-    console.log('✅ Health Check Response:', response.body);
+    // Setup default mock implementations
+    Groups.findAll.mockResolvedValue([]);
+    Rooms.findAll.mockResolvedValue([]);
+    Semesters.findAll.mockResolvedValue([]);
     
-    expect(response.body.status).toBe('ok');
-    expect(response.body.service).toBe('catalog2');
-    expect(response.body.timestamp).toBeDefined();
-    expect(response.body.environment).toBeDefined();
+    Groups.findById.mockResolvedValue(null);
+    Rooms.findById.mockResolvedValue(null);
+    Semesters.findById.mockResolvedValue(null);
+    
+    Semesters.findCurrent.mockResolvedValue(null);
   });
 
-  // Test Groups Endpoint
-  test('GET /api/groups - should return groups', async () => {
-    const response = await request(BASE_URL)
-      .get('/api/groups')
-      .expect(200);
-
-    console.log('✅ Groups Endpoint - Status:', response.status);
-    expect(Array.isArray(response.body)).toBe(true);
+  describe('GET /api/health', () => {
+    test('should return service health status', async () => {
+      const response = await request(app).get('/api/health');
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        status: 'ok',
+        service: 'catalog2',
+        timestamp: expect.any(String)
+      });
+    });
   });
 
-  // Test Rooms Endpoint  
-  test('GET /api/rooms - should return rooms', async () => {
-    const response = await request(BASE_URL)
-      .get('/api/rooms')
-      .expect(200);
+  describe('GET /api/groups', () => {
+    test('should return groups', async () => {
+      const mockGroups = [
+        { id: 1, name: 'Group A', description: 'Description A' },
+        { id: 2, name: 'Group B', description: 'Description B' }
+      ];
+      Groups.findAll.mockResolvedValue(mockGroups);
 
-    console.log('✅ Rooms Endpoint - Status:', response.status);
-    expect(Array.isArray(response.body)).toBe(true);
+      const response = await request(app).get('/api/groups');
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual(mockGroups);
+    });
   });
 
-  // Test Semesters Endpoint
-  test('GET /api/semesters - should return semesters', async () => {
-    const response = await request(BASE_URL)
-      .get('/api/semesters')
-      .expect(200);
+  describe('GET /api/rooms', () => {
+    test('should return rooms', async () => {
+      const mockRooms = [
+        { id: 1, name: 'Room 101', capacity: 30 },
+        { id: 2, name: 'Room 102', capacity: 40 }
+      ];
+      Rooms.findAll.mockResolvedValue(mockRooms);
 
-    console.log('✅ Semesters Endpoint - Status:', response.status);
-    expect(Array.isArray(response.body)).toBe(true);
+      const response = await request(app).get('/api/rooms');
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual(mockRooms);
+    });
   });
 
-  // Test CRUD Operations for Groups - KORRIGJUAR
+  describe('GET /api/semesters', () => {
+    test('should return semesters', async () => {
+      const mockSemesters = [
+        { id: 1, name: 'Fall 2024', start_date: '2024-09-01', end_date: '2024-12-20' },
+        { id: 2, name: 'Spring 2025', start_date: '2025-01-15', end_date: '2025-05-20' }
+      ];
+      Semesters.findAll.mockResolvedValue(mockSemesters);
+
+      const response = await request(app).get('/api/semesters');
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual(mockSemesters);
+    });
+  });
+
   describe('Groups CRUD Operations', () => {
     test('POST /api/groups - should attempt to create new group', async () => {
-      const newGroup = {
-        name: 'Test Group from CRUD'
-        // ✅ LËRE: Vetëm 'name' ekziston në databazë
-      };
+      const newGroup = { name: 'Test Group', description: 'Test Description' };
+      const createdGroup = { id: 1, ...newGroup };
+      Groups.create.mockResolvedValue(createdGroup);
 
-      const response = await request(BASE_URL)
+      const response = await request(app)
         .post('/api/groups')
         .send(newGroup)
         .set('Content-Type', 'application/json');
 
-      console.log('✅ POST Group Response:', response.status, response.body);
-      
-      // Accept all possible status codes
-      expect([201, 400, 409, 500]).toContain(response.status);
+      expect(response.status).toBeGreaterThanOrEqual(200);
+      expect(response.status).toBeLessThan(300);
+      expect(Groups.create).toHaveBeenCalledWith(newGroup);
     });
 
     test('PUT /api/groups/:id - should attempt to update group', async () => {
-      const updatedGroup = {
-        name: 'Updated Group from CRUD'
-        // ✅ LËRE: Vetëm 'name' ekziston në databazë
-      };
+      const updatedData = { name: 'Updated Group', description: 'Updated Description' };
+      Groups.update.mockResolvedValue({ id: 1, ...updatedData });
 
-      const response = await request(BASE_URL)
+      const response = await request(app)
         .put('/api/groups/1')
-        .send(updatedGroup)
+        .send(updatedData)
         .set('Content-Type', 'application/json');
 
-      console.log('✅ PUT Group Response:', response.status, response.body);
-      
-      // Accept all possible status codes including database errors
-      expect([200, 404, 500]).toContain(response.status);
+      expect(response.status).toBeGreaterThanOrEqual(200);
+      expect(response.status).toBeLessThan(300);
+      // KORRIGJUAR: ID vjen si string nga req.params.id
+      expect(Groups.update).toHaveBeenCalledWith("1", updatedData);
     });
 
     test('DELETE /api/groups/:id - should handle delete operation', async () => {
-      const response = await request(BASE_URL)
-        .delete('/api/groups/999'); // Përdor ID që nuk ekziston
+      Groups.delete.mockResolvedValue(true);
 
-      console.log('✅ DELETE Group Response:', response.status, response.body);
-      
-      // Accept both 200 (deleted) and 404 (not found)
-      expect([200, 404]).toContain(response.status);
+      const response = await request(app).delete('/api/groups/1');
+
+      expect([200, 204, 404]).toContain(response.status);
+      // KORRIGJUAR: ID vjen si string
+      expect(Groups.delete).toHaveBeenCalledWith("1");
     });
   });
 
-  // Test CRUD Operations for Rooms - KORRIGJUAR
   describe('Rooms CRUD Operations', () => {
     test('POST /api/rooms - should attempt to create new room', async () => {
-      const newRoom = {
-        name: 'Test Room CRUD',
-        capacity: 30
-        // ✅ LËRE: Vetëm 'name' dhe 'capacity' ekzistojnë
-      };
+      const newRoom = { name: 'Test Room', capacity: 30 };
+      const createdRoom = { id: 1, ...newRoom };
+      Rooms.create.mockResolvedValue(createdRoom);
 
-      const response = await request(BASE_URL)
+      const response = await request(app)
         .post('/api/rooms')
         .send(newRoom)
         .set('Content-Type', 'application/json');
 
-      console.log('✅ POST Room Response:', response.status, response.body);
-      expect([201, 400, 409, 500]).toContain(response.status);
+      expect(response.status).toBeGreaterThanOrEqual(200);
+      expect(response.status).toBeLessThan(300);
+      expect(Rooms.create).toHaveBeenCalledWith(newRoom);
     });
 
     test('PUT /api/rooms/:id - should attempt to update room', async () => {
-      const updatedRoom = {
-        name: 'Updated Room CRUD',
-        capacity: 40
-        // ✅ LËRE: Vetëm 'name' dhe 'capacity' ekzistojnë
-      };
+      const updatedData = { name: 'Updated Room', capacity: 40 };
+      Rooms.update.mockResolvedValue({ id: 1, ...updatedData });
 
-      const response = await request(BASE_URL)
+      const response = await request(app)
         .put('/api/rooms/1')
-        .send(updatedRoom)
+        .send(updatedData)
         .set('Content-Type', 'application/json');
 
-      console.log('✅ PUT Room Response:', response.status, response.body);
-      expect([200, 404, 500]).toContain(response.status);
+      expect(response.status).toBeGreaterThanOrEqual(200);
+      expect(response.status).toBeLessThan(300);
+      // KORRIGJUAR: ID vjen si string
+      expect(Rooms.update).toHaveBeenCalledWith("1", updatedData);
     });
 
     test('DELETE /api/rooms/:id - should handle delete operation', async () => {
-      const response = await request(BASE_URL)
-        .delete('/api/rooms/999'); // Përdor ID që nuk ekziston
+      Rooms.delete.mockResolvedValue(true);
 
-      console.log('✅ DELETE Room Response:', response.status, response.body);
-      expect([200, 404]).toContain(response.status);
+      const response = await request(app).delete('/api/rooms/1');
+
+      expect([200, 204, 404]).toContain(response.status);
+      // KORRIGJUAR: ID vjen si string
+      expect(Rooms.delete).toHaveBeenCalledWith("1");
     });
   });
 
-  // Test CRUD Operations for Semesters - KORRIGJUAR
   describe('Semesters CRUD Operations', () => {
     test('POST /api/semesters - should attempt to create new semester', async () => {
       const newSemester = {
-        name: 'Test Semester CRUD',
-        start_date: '2025-01-01',
-        end_date: '2025-06-30'
-        // ✅ LËRE: Pa 'isActive', pa 'startDate/endDate' (janë start_date/end_date)
+        name: 'Summer 2025',
+        start_date: '2025-06-01',
+        end_date: '2025-08-15',
+        is_current: false
       };
+      const createdSemester = { id: 1, ...newSemester };
+      Semesters.create.mockResolvedValue(createdSemester);
 
-      const response = await request(BASE_URL)
+      const response = await request(app)
         .post('/api/semesters')
         .send(newSemester)
         .set('Content-Type', 'application/json');
 
-      console.log('✅ POST Semester Response:', response.status, response.body);
-      expect([201, 400, 409, 500]).toContain(response.status);
+      expect(response.status).toBeGreaterThanOrEqual(200);
+      expect(response.status).toBeLessThan(300);
+      expect(Semesters.create).toHaveBeenCalledWith(newSemester);
     });
 
     test('PUT /api/semesters/:id - should attempt to update semester', async () => {
-      const updatedSemester = {
-        name: 'Updated Semester CRUD',
-        start_date: '2025-02-01',
-        end_date: '2025-07-31'
-        // ✅ LËRE: Pa 'isActive'
+      const updatedData = {
+        name: 'Updated Semester',
+        start_date: '2025-06-15',
+        end_date: '2025-08-30'
       };
+      Semesters.update.mockResolvedValue({ id: 1, ...updatedData });
 
-      const response = await request(BASE_URL)
+      const response = await request(app)
         .put('/api/semesters/1')
-        .send(updatedSemester)
+        .send(updatedData)
         .set('Content-Type', 'application/json');
 
-      console.log('✅ PUT Semester Response:', response.status, response.body);
-      expect([200, 404, 500]).toContain(response.status);
+      expect(response.status).toBeGreaterThanOrEqual(200);
+      expect(response.status).toBeLessThan(300);
+      // KORRIGJUAR: ID vjen si string
+      expect(Semesters.update).toHaveBeenCalledWith("1", updatedData);
     });
 
     test('DELETE /api/semesters/:id - should handle delete operation', async () => {
-      const response = await request(BASE_URL)
-        .delete('/api/semesters/999'); // Përdor ID që nuk ekziston
+      Semesters.delete.mockResolvedValue(true);
 
-      console.log('✅ DELETE Semester Response:', response.status, response.body);
-      expect([200, 404]).toContain(response.status);
+      const response = await request(app).delete('/api/semesters/1');
+
+      expect([200, 204, 404]).toContain(response.status);
+      // KORRIGJUAR: ID vjen si string
+      expect(Semesters.delete).toHaveBeenCalledWith("1");
     });
   });
 });

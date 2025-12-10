@@ -9,9 +9,20 @@
     "dev:schedule": "nodemon services/schedule/index.js",
     "dev:all": "npm-run-all -p dev:*",
     
-    "test:catalog2": "jest services/catalog2/tests --forceExit --detectOpenHandles",
-    "test:catalog2:watch": "jest services/catalog2/tests --watchAll --forceExit --detectOpenHandles",
-    "test": "jest --forceExit --detectOpenHandles"
+    "test": "jest services/catalog2/tests --forceExit --detectOpenHandles --setupFilesAfterEnv=./jest.setup.js",
+    "test:all": "jest --forceExit --detectOpenHandles --setupFilesAfterEnv=./jest.setup.js",
+    "test:watch": "jest --watchAll --forceExit --detectOpenHandles --setupFilesAfterEnv=./jest.setup.js",
+    "test:coverage": "jest --coverage --forceExit --detectOpenHandles --setupFilesAfterEnv=./jest.setup.js",
+    
+    "test:catalog1": "jest services/catalog1/tests --forceExit --detectOpenHandles",
+    "test:catalog2": "jest services/catalog2/tests --forceExit --detectOpenHandles --setupFilesAfterEnv=./jest.setup.js",
+    "test:catalog2:watch": "jest services/catalog2/tests --watchAll --forceExit --detectOpenHandles --setupFilesAfterEnv=./jest.setup.js",
+    "test:catalog2:verification": "jest services/catalog2/tests --forceExit --detectOpenHandles --setupFilesAfterEnv=./jest.setup.js --testNamePattern=\"verification\"",
+    
+    "test:auth": "jest services/auth/tests --forceExit --detectOpenHandles",
+    "test:schedule": "jest services/schedule/tests --forceExit --detectOpenHandles",
+    
+    "test:report": "jest services/catalog2/tests --json --outputFile=test-results.json --forceExit --detectOpenHandles --setupFilesAfterEnv=./jest.setup.js"
   },
   "dependencies": {
     "axios": "^1.13.2",
