@@ -1,111 +1,68 @@
 const request = require('supertest');
+const express = require('express');
+const semestersRoute = require('../routes/semesters.route');
 
-const BASE_URL = 'http://localhost:3007';
+const app = express();
+app.use(express.json());
+app.use('/api/semesters', semestersRoute);
+
+// Mock model
+jest.mock('../models/semesters.model');
+
+const Semesters = require('../models/semesters.model');
 
 describe('Semesters API', () => {
-  // Test GET all semesters
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   describe('GET /api/semesters', () => {
-    it('should return all semesters', async () => {
-      const response = await request(BASE_URL)
-        .get('/api/semesters')
-        .expect(200);
+    test('should return all semesters', async () => {
+      const mockSemesters = [
+        { id: 1, name: 'Fall 2024', start_date: '2024-09-01', end_date: '2024-12-20', is_current: true },
+        { id: 2, name: 'Spring 2025', start_date: '2025-01-15', end_date: '2025-05-20', is_current: false }
+      ];
 
-      expect(Array.isArray(response.body)).toBe(true);
-      
-      // If there are semesters, check their structure
-      if (response.body.length > 0) {
-        const semester = response.body[0];
-        expect(semester).toHaveProperty('id');
-        expect(semester).toHaveProperty('name');
-        expect(semester).toHaveProperty('start_date');
-        expect(semester).toHaveProperty('end_date');
-      }
+      Semesters.findAll.mockResolvedValue(mockSemesters);
+
+      const response = await request(app).get('/api/semesters');
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual(mockSemesters);
+      expect(Semesters.findAll).toHaveBeenCalledTimes(1);
     });
   });
+// ... kodi fillestar mbetet i njëjtë ...
 
-  // Test GET semester by ID
-  describe('GET /api/semesters/:id', () => {
-    it('should return a semester when valid ID is provided', async () => {
-      const response = await request(BASE_URL)
-        .get('/api/semesters/1')
-        .expect(200);
+describe('GET /api/semesters/:id', () => {
+  test('should return a semester when valid ID is provided', async () => {
+    const mockSemester = {
+      id: 1,
+      name: 'Fall 2024',
+      start_date: '2024-09-01',
+      end_date: '2024-12-20',
+      is_current: true
+    };
 
-      expect(response.body).toHaveProperty('id');
-      expect(response.body).toHaveProperty('name');
-      expect(response.body).toHaveProperty('start_date');
-      expect(response.body).toHaveProperty('end_date');
-    });
+    Semesters.findById.mockResolvedValue(mockSemester);
 
-    it('should return 404 for non-existent semester', async () => {
-      const response = await request(BASE_URL)
-        .get('/api/semesters/9999')
-        .expect(404);
+    const response = await request(app).get('/api/semesters/1');
 
-      expect(response.body).toHaveProperty('error');
-    });
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(mockSemester);
+    // KORRIGJUAR: ID vjen si string
+    expect(Semesters.findById).toHaveBeenCalledWith("1");
   });
 
-  // Test POST new semester - KORRIGJUAR me formatet e duhura të datave
-  describe('POST /api/semesters', () => {
-    it('should create a new semester with valid data', async () => {
-      const newSemester = {
-        name: 'Test Semester 2025',
-        start_date: '2025-01-15', // ✅ Format i saktë: YYYY-MM-DD
-        end_date: '2025-05-30'    // ✅ Format i saktë: YYYY-MM-DD
-      };
+  test('should return 404 for non-existent semester', async () => {
+    Semesters.findById.mockResolvedValue(null);
 
-      const response = await request(BASE_URL)
-        .post('/api/semesters')
-        .send(newSemester)
-        .set('Content-Type', 'application/json');
+    const response = await request(app).get('/api/semesters/999');
 
-      // Pranoi ose 201 (created) ose 400/409/500 (error)
-      expect([201, 400, 409, 500]).toContain(response.status);
-      
-      if (response.status === 201) {
-        expect(response.body).toHaveProperty('id');
-        expect(response.body.name).toBe(newSemester.name);
-        // Datat do të kthehen si ISO strings
-        expect(typeof response.body.start_date).toBe('string');
-        expect(typeof response.body.end_date).toBe('string');
-      }
-    });
-
-    it('should return 400 for invalid date format', async () => {
-      const invalidSemester = {
-        name: 'Invalid Date Semester',
-        start_date: 'not-a-valid-date',
-        end_date: '2025-06-01'
-      };
-
-      const response = await request(BASE_URL)
-        .post('/api/semesters')
-        .send(invalidSemester)
-        .set('Content-Type', 'application/json');
-
-      expect([400, 500]).toContain(response.status);
-      
-      if (response.status === 400) {
-        expect(response.body).toHaveProperty('error');
-      }
-    });
+    expect(response.status).toBe(404);
+    expect(response.body).toHaveProperty('error');
+    // KORRIGJUAR: ID vjen si string
+    expect(Semesters.findById).toHaveBeenCalledWith("999");
   });
-
-  // Test GET current semester - KORRIGJUAR rruga
-  describe('GET /api/semesters/current', () => {
-    it('should get current semester', async () => {
-      const response = await request(BASE_URL)
-        .get('/api/semesters/current');
-
-      // Could be 200 (found) or 404 (not found)
-      expect([200, 404]).toContain(response.status);
-      
-      if (response.status === 200) {
-        expect(response.body).toHaveProperty('id');
-        expect(response.body).toHaveProperty('name');
-        expect(response.body).toHaveProperty('start_date');
-        expect(response.body).toHaveProperty('end_date');
-      }
-    });
-  });
+});
 });

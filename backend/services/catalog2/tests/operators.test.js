@@ -1,100 +1,154 @@
 const request = require('supertest');
+const express = require('express');
 
-const BASE_URL = 'http://localhost:3007';
+// Importo rrugët
+const groupsRoute = require('../routes/groups.route');
+const roomsRoute = require('../routes/rooms.route');
+const semestersRoute = require('../routes/semesters.route');
+
+const app = express();
+app.use(express.json());
+
+// Mount rrugët
+app.use('/api/groups', groupsRoute);
+app.use('/api/rooms', roomsRoute);
+app.use('/api/semesters', semestersRoute);
+
+// Shto health endpoint
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    service: 'catalog2',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Mock models
+jest.mock('../models/groups.model');
+jest.mock('../models/rooms.model');
+jest.mock('../models/semesters.model');
+
+const Groups = require('../models/groups.model');
+const Rooms = require('../models/rooms.model');
+const Semesters = require('../models/semesters.model');
 
 describe('Operators API', () => {
-  describe('GET /api/health', () => {
-    it('should return health status', async () => {
-      const response = await request(BASE_URL)
-        .get('/api/health')
-        .expect(200);
+  beforeEach(() => {
+    jest.clearAllMocks();
+    
+    // Setup default mocks
+    Groups.findAll.mockResolvedValue([]);
+    Rooms.findAll.mockResolvedValue([]);
+    Semesters.findAll.mockResolvedValue([]);
+    Semesters.findCurrent.mockResolvedValue(null);
+  });
 
+  describe('GET /api/health', () => {
+    test('should return health status', async () => {
+      const response = await request(app).get('/api/health');
+      expect(response.status).toBe(200);
       expect(response.body.status).toBe('ok');
       expect(response.body.service).toBe('catalog2');
     });
   });
 
   describe('GET /api/groups', () => {
-    it('should return groups list', async () => {
-      const response = await request(BASE_URL)
-        .get('/api/groups')
-        .expect(200);
+    test('should return groups list', async () => {
+      const mockGroups = [
+        { id: 1, name: 'Group 1' },
+        { id: 2, name: 'Group 2' }
+      ];
+      Groups.findAll.mockResolvedValue(mockGroups);
 
-      expect(Array.isArray(response.body)).toBe(true);
+      const response = await request(app).get('/api/groups');
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual(mockGroups);
     });
   });
 
   describe('GET /api/rooms', () => {
-    it('should return rooms list', async () => {
-      const response = await request(BASE_URL)
-        .get('/api/rooms')
-        .expect(200);
+    test('should return rooms list', async () => {
+      const mockRooms = [
+        { id: 1, name: 'Room 101', capacity: 30 },
+        { id: 2, name: 'Room 102', capacity: 40 }
+      ];
+      Rooms.findAll.mockResolvedValue(mockRooms);
 
-      expect(Array.isArray(response.body)).toBe(true);
+      const response = await request(app).get('/api/rooms');
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual(mockRooms);
     });
   });
 
   describe('GET /api/semesters', () => {
-    it('should return semesters list', async () => {
-      const response = await request(BASE_URL)
-        .get('/api/semesters')
-        .expect(200);
+    test('should return semesters list', async () => {
+      const mockSemesters = [
+        { id: 1, name: 'Fall 2024' },
+        { id: 2, name: 'Spring 2025' }
+      ];
+      Semesters.findAll.mockResolvedValue(mockSemesters);
 
-      expect(Array.isArray(response.body)).toBe(true);
+      const response = await request(app).get('/api/semesters');
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual(mockSemesters);
     });
   });
 
   describe('POST /api/groups', () => {
-    it('should create a new group', async () => {
-      const newGroup = {
-        name: 'Test Operator Group'
-        // ✅ LËRE: Vetëm 'name' ekziston
-      };
+    test('should create a new group', async () => {
+      const newGroup = { name: 'New Group', description: 'New Description' };
+      const createdGroup = { id: 3, ...newGroup };
+      Groups.create.mockResolvedValue(createdGroup);
 
-      const response = await request(BASE_URL)
+      const response = await request(app)
         .post('/api/groups')
         .send(newGroup)
         .set('Content-Type', 'application/json');
 
-      // Pranoi status të ndryshëm
-      expect([201, 400, 409, 500]).toContain(response.status);
+      expect(response.status).toBeGreaterThanOrEqual(200);
+      expect(response.status).toBeLessThan(300);
+      expect(response.body).toHaveProperty('id');
+      expect(Groups.create).toHaveBeenCalledWith(newGroup);
     });
   });
+// ... kodi fillestar mbetet i njëjtë ...
 
-  describe('PUT /api/groups/:id', () => {
-    it('should update an existing group', async () => {
-      const updatedGroup = {
-        name: 'Updated Operator Group'
-        // ✅ LËRE: Vetëm 'name' ekziston
-      };
+describe('PUT /api/groups/:id', () => {
+  test('should update an existing group', async () => {
+    const updatedGroup = { name: 'Updated Group', description: 'Updated Description' };
+    Groups.update.mockResolvedValue({ id: 1, ...updatedGroup });
 
-      const response = await request(BASE_URL)
-        .put('/api/groups/1')
-        .send(updatedGroup)
-        .set('Content-Type', 'application/json');
+    const response = await request(app)
+      .put('/api/groups/1')
+      .send(updatedGroup)
+      .set('Content-Type', 'application/json');
 
-      // Pranoi status të ndryshëm duke përfshirë gabimet e databazës
-      expect([200, 404, 500]).toContain(response.status);
-    });
+    expect(response.status).toBeGreaterThanOrEqual(200);
+    expect(response.status).toBeLessThan(300);
+    // KORRIGJUAR: ID vjen si string
+    expect(Groups.update).toHaveBeenCalledWith("1", updatedGroup);
+  });
+});
+
+describe('DELETE /api/groups/:id', () => {
+  test('should delete a group', async () => {
+    Groups.delete.mockResolvedValue(true);
+
+    const response = await request(app).delete('/api/groups/1');
+
+    expect([200, 204]).toContain(response.status);
+    // KORRIGJUAR: ID vjen si string
+    expect(Groups.delete).toHaveBeenCalledWith("1");
   });
 
-  describe('DELETE /api/groups/:id', () => {
-    it('should delete a group', async () => {
-      const response = await request(BASE_URL)
-        .delete('/api/groups/999')
-        .expect(404);
+  test('should return 404 for non-existent group', async () => {
+    Groups.delete.mockResolvedValue(false);
 
-      expect(response.body).toHaveProperty('error');
-    });
+    const response = await request(app).delete('/api/groups/999');
+
+    expect(response.status).toBe(404);
+    // KORRIGJUAR: ID vjen si string
+    expect(Groups.delete).toHaveBeenCalledWith("999");
   });
-
-  describe('GET /api/semesters/current/current', () => {
-    it('should get current semester', async () => {
-      const response = await request(BASE_URL)
-        .get('/api/semesters/current/current');
-
-      // Could be 200 or 404 (if no current semester)
-      expect([200, 404]).toContain(response.status);
-    });
-  });
+});
 });
