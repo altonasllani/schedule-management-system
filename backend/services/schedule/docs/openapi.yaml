@@ -1,0 +1,234 @@
+openapi: 3.0.0
+info:
+  title: Schedule API - Sessions Management
+  description: |
+    Microservis për menaxhimin e orareve (Sessions) në sistemin e menaxhimit të orarit.
+  version: 1.0.0
+  contact:
+    name: Development Team
+    email: dev@schedule-management.com
+
+servers:
+  - url: http://localhost:3009
+    description: Development Server
+  - url: https://api.schedule-management.com/schedule
+    description: Production Server
+
+tags:
+  - name: Health
+    description: Kontroll i shëndetit të shërbimit
+  - name: Sessions
+    description: Menaxhimi i orareve të mësimit
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Kontrollon statusin e shërbimit
+      responses:
+        '200':
+          description: Shërbimi po funksionon
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '500':
+          description: Gabim i brendshëm i serverit
+
+  /sessions:
+    get:
+      tags:
+        - Sessions
+      summary: Merr të gjitha sesionet
+      description: Kthen listën e të gjitha orareve të mësimeve
+      responses:
+        '200':
+          description: Lista e sesioneve
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Session'
+        '500':
+          description: Gabim i serverit
+
+    post:
+      tags:
+        - Sessions
+      summary: Krijo një sesion të ri
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionRequest'
+      responses:
+        '201':
+          description: Sesioni u krijua me sukses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '400':
+          description: Të dhëna të pavlefshme
+
+  /sessions/{id}:
+    get:
+      tags:
+        - Sessions
+      summary: Merr sesion sipas ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Sesioni u gjet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '404':
+          description: Sesioni nuk u gjet
+
+    put:
+      tags:
+        - Sessions
+      summary: Përditëso një sesion ekzistues
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSessionRequest'
+      responses:
+        '200':
+          description: Sesioni u përditësua me sukses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '400':
+          description: Të dhëna të pavlefshme
+        '404':
+          description: Sesioni nuk u gjet
+
+    delete:
+      tags:
+        - Sessions
+      summary: Fshi një sesion
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Sesioni u fshi me sukses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+        '404':
+          description: Sesioni nuk u gjet
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "ok"
+        service:
+          type: string
+          example: "schedule"
+        time:
+          type: string
+          format: date-time
+
+    Session:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        group_id:
+          type: integer
+          example: 2
+        room_id:
+          type: integer
+          example: 5
+        subject:
+          type: string
+          example: "Matematika 1"
+        start_time:
+          type: string
+          format: date-time
+          example: "2024-09-15T08:00:00Z"
+        end_time:
+          type: string
+          format: date-time
+          example: "2024-09-15T09:00:00Z"
+
+    CreateSessionRequest:
+      type: object
+      required:
+        - group_id
+        - room_id
+        - subject
+        - start_time
+        - end_time
+      properties:
+        group_id:
+          type: integer
+        room_id:
+          type: integer
+        subject:
+          type: string
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+
+    UpdateSessionRequest:
+      type: object
+      properties:
+        group_id:
+          type: integer
+        room_id:
+          type: integer
+        subject:
+          type: string
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+
+    DeleteResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Session deleted successfully"
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
