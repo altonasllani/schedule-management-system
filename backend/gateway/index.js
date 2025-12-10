@@ -72,6 +72,14 @@ app.get('/api/catalog1/group-courses', (req, res) => {
 });
 
 // këtu më vonë do shtojmë rruget për auth, catalog2, schedule
+const { createProxyMiddleware } = require('http-proxy-middleware');
+
+// SCHEDULE
+app.use('/api/schedule', createProxyMiddleware({
+  target: 'http://localhost:3009',
+  changeOrigin: true,
+  pathRewrite: { '^/api/schedule': '' },
+}));
 
 // 404 + error handler
 app.use(notFound);
