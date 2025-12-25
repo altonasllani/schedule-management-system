@@ -1,26 +1,25 @@
-// backend/services/auth/models/users.model.js
 const { pool } = require('../../../shared/db');
 
 /**
- * Krijon një user të ri
+ * Krijon një user të ri në PostgreSQL sipas strukturës suaj
  * { name, email, passwordHash }
  */
 async function createUser({ name, email, passwordHash }) {
   const result = await pool.query(
     `INSERT INTO users (name, email, password_hash)
      VALUES ($1, $2, $3)
-     RETURNING id, name, email`,
+     RETURNING id, name, email, created_at`,
     [name, email, passwordHash]
   );
   return result.rows[0];
 }
 
 /**
- * Gjen user sipas email-it
+ * Gjen user sipas email-it nga PostgreSQL
  */
 async function findUserByEmail(email) {
   const result = await pool.query(
-    `SELECT id, name, email, password_hash
+    `SELECT id, name, email, password_hash, created_at
      FROM users
      WHERE email = $1`,
     [email]
@@ -29,11 +28,11 @@ async function findUserByEmail(email) {
 }
 
 /**
- * Gjen user sipas id-së
+ * Gjen user sipas id-së nga PostgreSQL
  */
 async function findUserById(id) {
   const result = await pool.query(
-    `SELECT id, name, email
+    `SELECT id, name, email, created_at
      FROM users
      WHERE id = $1`,
     [id]
@@ -42,8 +41,7 @@ async function findUserById(id) {
 }
 
 /**
- * Gjen rolin (e parë) të user-it
- * kthen: 'admin' | 'professor' | 'student' ose null
+ * Gjen rolin e user-it nga PostgreSQL (nga tabela userroles)
  */
 async function findUserRoleByUserId(userId) {
   const result = await pool.query(
@@ -58,7 +56,7 @@ async function findUserRoleByUserId(userId) {
 }
 
 /**
- * Kthen listën e user-ave me rolin e tyre (për admin)
+ * Kthen listën e të gjithë user-ave me rolin e tyre
  */
 async function findAllUsersWithRole() {
   const result = await pool.query(
@@ -66,20 +64,18 @@ async function findAllUsersWithRole() {
        u.id,
        u.name,
        u.email,
+       u.created_at,
        COALESCE(r.name, 'student') AS role
      FROM users u
      LEFT JOIN userroles ur ON ur.user_id = u.id
      LEFT JOIN roles r ON r.id = ur.role_id
-     ORDER BY u.id`
+     ORDER BY u.created_at DESC`
   );
   return result.rows;
 }
 
 /**
- * Ndryshon rolin e user-it:
- * - gjen role_id nga tabela roles
- * - fshin rreshtat e vjetër nga userroles
- * - fut rreshtin e ri (user_id, role_id)
+ * Ndryshon rolin e user-it në PostgreSQL
  */
 async function updateUserRole(userId, newRoleName) {
   const roleResult = await pool.query(
@@ -87,19 +83,20 @@ async function updateUserRole(userId, newRoleName) {
     [newRoleName]
   );
   const role = roleResult.rows[0];
+  
   if (!role) {
     const error = new Error('Roli nuk ekziston');
     error.status = 400;
     throw error;
   }
 
-  // fshi rolet ekzistuese
+  // Fshi rolet ekzistuese për këtë user
   await pool.query(
     `DELETE FROM userroles WHERE user_id = $1`,
     [userId]
   );
 
-  // shto rolin e ri
+  // Shto rolin e ri
   await pool.query(
     `INSERT INTO userroles (user_id, role_id)
      VALUES ($1, $2)`,

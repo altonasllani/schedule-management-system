@@ -1,81 +1,60 @@
 // backend/shared/auth.js
 const jwt = require('jsonwebtoken');
 
-/**
- * Gjeneron një access token për user-in
- * user: { id, email, role }
- */
-function signAccessToken(user) {
-  return jwt.sign(
-    {
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-    },
-    process.env.ACCESS_TOKEN_SECRET,
-    { expiresIn: '15m' } // mund ta ndryshosh
-  );
-}
-
-/**
- * Gjeneron një refresh token
- */
-function signRefreshToken(user) {
-  return jwt.sign(
-    {
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-    },
-    process.env.REFRESH_TOKEN_SECRET,
-    { expiresIn: '7d' }
-  );
-}
-
-/**
- * Middleware: kërkon Authorization: Bearer <token>
- * Nëse token-i është OK → vendos req.user
- */
-function requireAuth(req, res, next) {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res
-      .status(401)
-      .json({ error: 'Missing or invalid Authorization header' });
-  }
-
-  const token = authHeader.split(' ')[1];
-
-  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, payload) => {
-    if (err) {
-      console.error('JWT verify error:', err.message);
-      return res.status(401).json({ error: 'Invalid or expired token' });
-    }
-
-    // payload: { sub, email, role, iat, exp }
-    req.user = {
-      id: payload.sub,
-      email: payload.email,
-      role: payload.role,
-    };
-
-    next();
+function signAccessToken(payload) {
+  return jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
+    expiresIn: process.env.ACCESS_TOKEN_EXPIRY || '15m',
   });
 }
 
-/**
- * Middleware: lejon vetëm user-at me role të caktuara
- * p.sh. requireRole('admin'), requireRole('admin', 'professor')
- */
-function requireRole(...allowedRoles) {
+function signRefreshToken(payload) {
+  return jwt.sign(payload, process.env.REFRESH_TOKEN_SECRET, {
+    expiresIn: process.env.REFRESH_TOKEN_EXPIRY || '7d',
+  });
+}
+
+function verifyAccessToken(token) {
+  try {
+    return jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+  } catch (err) {
+    return null;
+  }
+}
+
+function verifyRefreshToken(token) {
+  try {
+    return jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
+  } catch (err) {
+    return null;
+  }
+}
+
+function requireAuth(req, res, next) {
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'No token provided' });
+  }
+
+  const token = authHeader.split(' ')[1];
+  const payload = verifyAccessToken(token);
+
+  if (!payload) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+
+  req.user = payload;
+  next();
+}
+
+function requireRole(role) {
   return (req, res, next) => {
-    if (!req.user || !req.user.role) {
-      return res.status(403).json({ error: 'Forbidden' });
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
     }
 
-    if (!allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({ error: 'Forbidden' });
+    if (req.user.role !== role) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
     }
 
     next();
@@ -85,6 +64,8 @@ function requireRole(...allowedRoles) {
 module.exports = {
   signAccessToken,
   signRefreshToken,
+  verifyAccessToken,
+  verifyRefreshToken,
   requireAuth,
   requireRole,
 };

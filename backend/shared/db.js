@@ -1,25 +1,25 @@
 // backend/shared/db.js
 const { Pool } = require('pg');
-const dotenv = require('dotenv');
+require('dotenv').config();
 
-dotenv.config();
-
-// Pool i PostgreSQL – përdoret nga të gjitha mikroshërbimet
 const pool = new Pool({
-  host: process.env.PG_HOST,
-  port: Number(process.env.PG_PORT) || 5432,
-  user: process.env.PG_USER,
-  password: process.env.PG_PASSWORD,
-  database: process.env.PG_DB,
+  host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT || 5432,
+  database: process.env.DB_NAME,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
 });
 
-// testim i lidhjes
-pool.connect()
-  .then(() => {
-    console.log('📌 PostgreSQL connected successfully');
-  })
-  .catch((err) => {
-    console.error('❌ PostgreSQL connection error:', err.message);
-  });
+// Test connection
+pool.on('connect', () => {
+  console.log('✅ Connected to PostgreSQL database');
+});
+
+pool.on('error', (err) => {
+  console.error('❌ PostgreSQL pool error:', err);
+});
 
 module.exports = { pool };
