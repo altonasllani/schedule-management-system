@@ -1,0 +1,94 @@
+/* App.css */
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+
+/* Reset default styles */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+ul, ol {
+  list-style: none;
+}
+
+/* Ensure consistent button styling */
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Form consistency */
+form {
+  width: 100%;
+}
+
+/* Input consistency */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px #1e293b inset !important;
+  -webkit-text-fill-color: white !important;
+  caret-color: white;
+}
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .mobile-padding {
+    padding: 0.75rem;
+  }
+}
+
+/* Accessibility improvements */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Loading states */
+.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Card shadows */
+.card-shadow {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 
+              0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.card-shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 
+              0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Transition utilities */
+.transition-fast {
+  transition: all 0.15s ease-in-out;
+}
+
+.transition-normal {
+  transition: all 0.3s ease-in-out;
+}
+
+.transition-slow {
+  transition: all 0.5s ease-in-out;
+}
