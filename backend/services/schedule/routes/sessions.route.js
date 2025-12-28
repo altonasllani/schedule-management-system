@@ -1,7 +1,10 @@
 const express = require('express');
 const controller = require('../controllers/sessions.controller');
-const { validate } = require('../../shared/validate');
-const { createSessionSchema, updateSessionSchema } = require('../validators/session.schema');
+const { validate } = require('../../../shared/utils/validate');
+const {
+  createSessionSchema,
+  updateSessionSchema,
+} = require('../validators/session.schema');
 
 const router = express.Router();
 
