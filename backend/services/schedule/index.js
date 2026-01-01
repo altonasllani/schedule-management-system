@@ -3,7 +3,7 @@ const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
 const router = require('./routes/sessions.route');
-const { notFound, onError } = require('../shared/http');
+const { notFound, onError } = require('../../shared/http');
 
 const app = express();
 

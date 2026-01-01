@@ -1,4 +1,4 @@
-const { pool } = require('../../shared/db');
+const { pool } = require('../../../shared/db');
 
 class SessionModel {
   async getAll() {
@@ -12,6 +12,7 @@ class SessionModel {
     const result = await pool.query(query, [id]);
     return result.rows[0] || null;
   }
+  
 
   async create(data) {
     const conflict = await this.hasConflict(data);
