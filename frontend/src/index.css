@@ -1,9 +1,4 @@
-<<<<<<< Updated upstream
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-=======
-/* index.css - Version me background të bardhë */
+/* index.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -283,7 +278,7 @@ input:disabled {
 /* Large login card styles */
 .large-login-container {
   width: 100%;
-  max-width: 36rem; /* 576px - më e madhe se më parë */
+  max-width: 36rem; /* 576px */
   margin: 0 auto;
 }
 
@@ -330,4 +325,3 @@ input:disabled {
   margin-top: 2.5rem;
   font-size: 0.875rem;
 }
->>>>>>> Stashed changes
