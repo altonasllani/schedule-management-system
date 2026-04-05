@@ -1,7 +1,5 @@
 /* index.css */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 :root {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
@@ -101,7 +99,7 @@ body {
 
 /* Remove default button styles */
 button {
-  background: none;
+  background: transparent;
   border: none;
   cursor: pointer;
   font-family: inherit;
@@ -181,7 +179,7 @@ input:disabled {
 
 /* Password requirements tooltip */
 .password-requirements-tooltip {
-  position: absolute;
+  position: relative;
   z-index: 50;
   width: 100%;
   margin-top: 0.5rem;
