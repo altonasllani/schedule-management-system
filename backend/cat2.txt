@@ -1,0 +1,8 @@
+📚 Catalog2 Service is running
+📍 Environment: development
+🌐 Server: http://localhost:3007
+🔍 Health check: http://localhost:3007/api/health
+⏰ Started at: 2026-03-14T00:21:33.298Z
+──────────────────────────────────────────
+✅ Catalog2 Database connected successfully
+📊 Catalog2 Database test query successful: 2026-03-14T00:21:33.339Z

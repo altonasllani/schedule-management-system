@@ -1,0 +1,10 @@
+📚 Catalog1 service running on port 3006
+✅ All CRUD operations available WITH VALIDATION:
+   📖 Courses: GET, POST, PUT, DELETE
+   👨‍🏫 Professors: GET, POST, PUT, DELETE
+   🕐 Sessions: GET, POST, PUT, DELETE
+   👥 Users: GET, POST, PUT, DELETE
+   🔑 Roles: GET, POST, PUT, DELETE
+   📚 Group-Courses: GET, POST, DELETE
+   👥🔑 User-Roles: GET, POST, DELETE
+📌 PostgreSQL connected successfully

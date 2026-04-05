@@ -8,8 +8,8 @@
     "dev:catalog2": "nodemon services/catalog2/index.js",
     "dev:schedule": "nodemon services/schedule/index.js",
     
-    "dev:all": "npm-run-all --sequential dev:auth dev:catalog1 dev:catalog2 dev:schedule dev:gateway",
-    "dev:all-parallel": "npm-run-all -p dev:*",
+    "dev:all": "npm-run-all -p dev:auth dev:catalog1 dev:catalog2 dev:schedule dev:gateway",
+    "dev:all-parallel": "npm-run-all -p dev:auth dev:catalog1 dev:catalog2 dev:schedule dev:gateway",
     "dev:all-delay": "npm-run-all --sequential --continue-on-error dev:auth dev:catalog1 dev:catalog2 dev:schedule dev:gateway",
     "dev:start": "node start-services.js",
     

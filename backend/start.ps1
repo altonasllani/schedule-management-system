@@ -1,0 +1,5 @@
+Start-Process node "gateway/index.js"
+Start-Process node "services/auth/index.js"
+Start-Process node "services/catalog1/index.js"
+Start-Process node "services/catalog2/index.js"
+Start-Process node "services/schedule/index.js"

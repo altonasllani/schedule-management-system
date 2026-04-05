@@ -9,7 +9,6 @@ const app = express();
 
 // Middleware bazë
 app.use(cors());
-app.use(express.json());
 app.use(morgan('dev'));
 
 // ✅ HEALTH CHECK PËR GATEWAY
@@ -36,6 +35,44 @@ app.get('/api/gateway/health', (req, res) => {
   });
 });
 
+// ✅ DASHBOARD ENDPOINTS
+const { pool } = require('../shared/db');
+
+app.get('/api/dashboard/stats', async (req, res) => {
+  try {
+    const courses = await pool.query('SELECT COUNT(*) FROM courses');
+    const groups = await pool.query('SELECT COUNT(*) FROM groups');
+    const professors = await pool.query('SELECT COUNT(*) FROM professors');
+    const users = await pool.query('SELECT COUNT(*) FROM users');
+    const rooms = await pool.query('SELECT COUNT(*) FROM rooms');
+    const semesters = await pool.query('SELECT COUNT(*) FROM semesters');
+    
+    res.json({
+      courses: parseInt(courses.rows[0].count),
+      groups: parseInt(groups.rows[0].count),
+      professors: parseInt(professors.rows[0].count),
+      students: parseInt(users.rows[0].count), // Total registered accounts
+      rooms: parseInt(rooms.rows[0].count),
+      activeSemesters: parseInt(semesters.rows[0].count)
+    });
+  } catch (err) {
+    console.error('Stats query error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch database statistics' });
+  }
+});
+
+app.get('/api/dashboard/activities', async (req, res) => {
+  try {
+    // Kthen një log të simuluar pasi audit_logs nuk ekziston ende në db
+    res.json([
+      { title: "Sistem", desc: "Akses nga baza e të dhënave", time: "Sot", bg: "bg-blue-100 text-blue-600" },
+      { title: "Gjendje", desc: "Sistemi po punon 100% saktë", time: "Aktuale", bg: "bg-emerald-100 text-emerald-600" }
+    ]);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch activities' });
+  }
+});
+
 // ✅ PROXY PËR TË GJITHA SHËRBIMET:
 
 // 1. AUTH SERVICE (3001)
@@ -43,7 +80,7 @@ app.use('/api/auth', createProxyMiddleware({
   target: 'http://localhost:3001',
   changeOrigin: true,
   pathRewrite: {
-    '^/api/auth': '/auth'  // /api/auth/health -> http://localhost:3001/auth/health
+    '^/': '/auth/'
   },
   onProxyReq: (proxyReq, req, res) => {
     console.log(`🔐 [Gateway] Proxying to Auth: ${req.originalUrl}`);
@@ -62,7 +99,7 @@ app.use('/api/catalog1', createProxyMiddleware({
   target: 'http://localhost:3006',
   changeOrigin: true,
   pathRewrite: {
-    '^/api/catalog1': '/api'  // /api/catalog1/courses -> http://localhost:3006/api/courses
+    '^/': '/api/'
   },
   onProxyReq: (proxyReq, req, res) => {
     console.log(`📚 [Gateway] Proxying to Catalog1: ${req.originalUrl}`);
@@ -82,7 +119,7 @@ app.use('/api/catalog2', createProxyMiddleware({
   target: 'http://localhost:3007',
   changeOrigin: true,
   pathRewrite: {
-    '^/api/catalog2': '/api'  // /api/catalog2/groups -> http://localhost:3007/api/groups
+    '^/': '/api/'
   },
   onProxyReq: (proxyReq, req, res) => {
     console.log(`📚 [Gateway] Proxying to Catalog2: ${req.originalUrl}`);
@@ -102,7 +139,7 @@ app.use('/api/schedule', createProxyMiddleware({
   target: 'http://localhost:3009',
   changeOrigin: true,
   pathRewrite: {
-    '^/api/schedule': ''  // /api/schedule/sessions -> http://localhost:3009/sessions
+    '^/': '/'
   },
   onProxyReq: (proxyReq, req, res) => {
     console.log(`📅 [Gateway] Proxying to Schedule: ${req.originalUrl}`);
