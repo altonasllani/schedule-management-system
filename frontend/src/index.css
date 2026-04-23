@@ -1,5 +1,6 @@
-/* index.css */
 @import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
@@ -19,30 +20,27 @@
 }
 
 html, body {
-  height: 100%;
+  min-height: 100vh;
   width: 100%;
   overflow-x: hidden;
 }
 
 body {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #ffffff 0%, #f9fafb 50%, #f3f4f6 100%);
+  @apply bg-slate-50 dark:bg-[#0a0f1c] text-slate-900 dark:text-slate-200 transition-colors duration-300;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
+  flex-direction: column;
+  padding: 0;
 }
 
 /* Custom animations */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-8px); }
 }
 
 @keyframes spin {
@@ -51,24 +49,94 @@ body {
 }
 
 @keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
-.animate-fadeIn {
-  animation: fadeIn 0.2s ease-out;
+@keyframes pulseSlow {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(1.08); }
 }
 
-.animate-spin {
-  animation: spin 0.6s linear infinite;
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.animate-pulse {
+@keyframes slideLeftFade {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideRightFade {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@utility animate-fadeIn {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+@utility animate-fadeOut {
+  animation: fadeOut 0.3s ease-out forwards;
+}
+
+@utility animate-spin {
+  animation: spin 0.8s linear infinite;
+}
+
+@utility animate-pulse {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@utility animate-pulse-slow {
+  animation: pulseSlow 6s ease-in-out infinite;
+}
+
+@utility animate-slideUpFade {
+  animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@utility animate-slideLeftFade {
+  animation: slideLeftFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@utility animate-slideRightFade {
+  animation: slideRightFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@utility animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+@utility delay-100 {
+  animation-delay: 100ms;
+}
+
+@utility delay-300 {
+  animation-delay: 300ms;
+}
+
+@utility delay-500 {
+  animation-delay: 500ms;
+}
+
+@utility delay-700 {
+  animation-delay: 700ms;
+}
+
+@utility delay-1000 {
+  animation-delay: 1000ms;
 }
 
 /* Custom scrollbar */
@@ -78,23 +146,21 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(209, 213, 219, 0.4);
-  border-radius: 3px;
+  @apply bg-slate-200 dark:bg-slate-800 rounded;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(107, 114, 128, 0.6);
-  border-radius: 3px;
+  @apply bg-slate-400 dark:bg-slate-600 rounded;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(75, 85, 99, 0.8);
+  @apply bg-slate-500 dark:bg-slate-500;
 }
 
 /* Selection styling */
 ::selection {
   background-color: rgba(16, 185, 129, 0.3);
-  color: #111827;
+  @apply text-slate-900 dark:text-slate-100;
 }
 
 /* Remove default button styles */
@@ -109,7 +175,7 @@ button {
 :focus-visible {
   outline: 2px solid #10b981;
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: 8px;
 }
 
 /* Remove outline for non-keyboard interactions */
@@ -118,110 +184,76 @@ button {
 }
 
 /* Smooth transitions */
-input, button, a, label {
-  transition: all 0.15s ease-in-out;
+input, button, a {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Input styling */
-input {
-  border-radius: 0.75rem;
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 40px #f8fafc inset !important;
+  -webkit-text-fill-color: #0f172a !important;
+  caret-color: #10b981;
+  border-radius: 12px !important;
+}
+
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus,
+.dark input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 40px #1e293b inset !important;
+  -webkit-text-fill-color: #f1f5f9 !important;
 }
 
 input:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* Password field with eye icon */
-.password-field-container {
-  position: relative;
-  width: 100%;
-}
-
-.password-field-container input {
-  width: 100%;
-  padding-right: 3.5rem !important;
-}
-
-.password-field-container .eye-icon-button {
-  position: absolute;
-  right: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  background: transparent;
-  border: none;
-  color: #6b7280;
-  cursor: pointer;
-  padding: 0.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 0.5rem;
-  z-index: 10;
-}
-
-.password-field-container .eye-icon-button:hover {
-  color: #374151;
-  background: rgba(107, 114, 128, 0.1);
-}
-
-.password-field-container .eye-icon-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.password-field-container .eye-icon-button:focus {
-  outline: 2px solid #10b981;
-  outline-offset: 2px;
+/* Shimmer effect for loading states */
+@utility shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.05),
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
 }
 
-/* Password requirements tooltip */
-.password-requirements-tooltip {
-  position: relative;
-  z-index: 50;
-  width: 100%;
-  margin-top: 0.5rem;
-  padding: 1rem;
-  background: #ffffff;
-  border: 1px solid #d1d5db;
-  border-radius: 0.75rem;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+/* Glass morphism utilities */
+@utility glass {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+@utility glass-light {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
 
-.password-requirements-tooltip ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+/* Gradient text utility */
+@utility gradient-text {
+  background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
-.password-requirements-tooltip li {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.5rem;
+/* Custom shadow utilities */
+@utility shadow-glow {
+  box-shadow: 0 0 40px rgba(16, 185, 129, 0.15);
 }
 
-.password-requirements-tooltip li:last-child {
-  margin-bottom: 0;
+@utility shadow-glow-lg {
+  box-shadow: 0 0 60px rgba(16, 185, 129, 0.2);
 }
 
-.requirement-dot {
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.requirement-dot.fulfilled {
-  background-color: #10b981;
-}
-
-.requirement-dot.unfulfilled {
-  background-color: #9ca3af;
+@utility shadow-glow-blue {
+  box-shadow: 0 0 40px rgba(59, 130, 246, 0.15);
 }
 
 /* Responsive text sizes */
@@ -229,35 +261,11 @@ input:disabled {
   :root {
     font-size: 15px;
   }
-  
-  body {
-    padding: 1rem;
-  }
-  
-  .password-field-container .eye-icon-button {
-    width: 2.25rem;
-    height: 2.25rem;
-    padding: 0.375rem;
-  }
-  
-  .password-field-container input {
-    padding-right: 3.25rem !important;
-  }
 }
 
 @media (max-width: 640px) {
   :root {
     font-size: 14px;
-  }
-  
-  .password-field-container .eye-icon-button {
-    width: 2rem;
-    height: 2rem;
-    padding: 0.25rem;
-  }
-  
-  .password-field-container input {
-    padding-right: 3rem !important;
   }
 }
 
@@ -273,53 +281,424 @@ input:disabled {
   }
 }
 
-/* Large login card styles */
-.large-login-container {
-  width: 100%;
-  max-width: 36rem; /* 576px */
-  margin: 0 auto;
+@layer components {
+  /* Page Layout */
+  .page-container {
+    @apply p-6 lg:p-10 max-w-7xl mx-auto;
+  }
+  .page-header {
+    @apply mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between;
+  }
+  .page-title {
+    @apply text-2xl sm:text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent tracking-tight;
+  }
+  .page-subtitle {
+    @apply text-slate-500 dark:text-slate-400 mt-1;
+  }
+
+  /* Cards */
+  .card {
+    @apply bg-white dark:bg-slate-900/70 p-6 rounded-3xl border border-slate-200 dark:border-slate-700/50 shadow-sm dark:shadow-xl dark:shadow-black/40 overflow-hidden dark:backdrop-blur-xl transition-all duration-300;
+  }
+  .card-header {
+    @apply flex items-center justify-between mb-6;
+  }
+  .card-title {
+    @apply text-lg font-bold text-slate-800 dark:text-slate-200;
+  }
+
+  /* Buttons */
+  .btn {
+    @apply px-4 py-2 rounded-xl font-medium text-sm transition-all transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 shadow-sm dark:shadow-lg;
+  }
+  .btn-primary {
+    @apply bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white dark:shadow-emerald-900/30 border border-emerald-500/20 dark:border-emerald-400/20;
+  }
+  .btn-secondary {
+    @apply bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-emerald-600 dark:hover:text-emerald-400 dark:shadow-black/20;
+  }
+  .btn-danger {
+    @apply bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white dark:shadow-red-900/30 border border-red-500/20 dark:border-red-400/20;
+  }
+
+  /* Table */
+  .table-container {
+    @apply w-full overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-900/40 dark:backdrop-blur-sm shadow-sm dark:shadow-none transition-colors duration-300;
+  }
+  .table {
+    @apply w-full text-left text-sm text-slate-600 dark:text-slate-300;
+  }
+  .table-th {
+    @apply bg-slate-50 dark:bg-slate-800/80 px-4 py-3.5 font-semibold text-slate-800 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700/50 whitespace-nowrap;
+  }
+  .table-td {
+    @apply px-4 py-3.5 border-b border-slate-100 dark:border-slate-700/50;
+  }
+  .table-tr {
+    @apply hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors;
+  }
+  
+  /* Badges */
+  .badge {
+    @apply px-2.5 py-1 rounded-lg text-xs font-medium border shadow-sm dark:backdrop-blur-sm;
+  }
+  .badge-success {
+    @apply bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20 dark:shadow-[inset_0_0_12px_rgba(16,185,129,0.05)];
+  }
+  .badge-warning {
+    @apply bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/20 dark:shadow-[inset_0_0_12px_rgba(245,158,11,0.05)];
+  }
+  .badge-info {
+    @apply bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-500/20 dark:shadow-[inset_0_0_12px_rgba(59,130,246,0.05)];
+  }
+}
+/* MainLayout Styles */
+@custom-variant dark (&:where(.dark, .dark *));
+
+.layoutContainer {
+  @apply min-h-screen bg-slate-50 dark:bg-[#0a0f1c] text-slate-900 dark:text-slate-200 flex flex-col md:flex-row relative overflow-hidden transition-colors duration-300;
 }
 
-.large-login-card {
-  width: 100%;
-  background: #ffffff;
-  border-radius: 1.5rem;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e5e7eb;
-  overflow: hidden;
+.mobileHeader {
+  @apply md:hidden bg-white dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-700/50 h-16 flex items-center justify-between px-4 z-20 shadow-sm;
 }
 
-.large-login-card .card-content {
-  padding: 3rem 2.5rem;
+.mobileLogo {
+  @apply flex items-center gap-2 font-bold text-lg text-slate-800 dark:text-slate-100;
 }
 
-.large-login-card .title {
-  font-size: 2.25rem;
-  margin-bottom: 0.75rem;
+.mobileMenuBtn {
+  @apply p-2 text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-lg transition-colors;
 }
 
-.large-login-card .subtitle {
-  font-size: 1.125rem;
-  margin-bottom: 2.5rem;
+.sidebarOverlay {
+  @apply fixed inset-0 bg-slate-900/20 dark:bg-[#0a0f1c]/80 backdrop-blur-sm z-30 md:hidden;
 }
 
-.large-login-card input {
-  padding: 1.125rem 1.5rem;
-  font-size: 1.125rem;
+.sidebar {
+  @apply fixed md:relative z-40 w-64 h-full min-h-screen bg-white dark:bg-slate-900/80 dark:backdrop-blur-xl border-r border-slate-200 dark:border-slate-700/50 flex flex-col transition-transform duration-300 md:flex-shrink-0 shadow-sm dark:shadow-xl dark:shadow-black/40 md:shadow-none;
 }
 
-.large-login-card button[type="submit"] {
-  padding: 1.25rem;
-  font-size: 1.25rem;
-  margin-top: 2rem;
+.sidebarOpen {
+  @apply translate-x-0;
 }
 
-.large-login-card .toggle-section {
-  margin-top: 2.5rem;
-  padding-top: 2rem;
+.sidebarClosed {
+  @apply -translate-x-full md:translate-x-0;
 }
 
-.large-login-card .footer {
-  margin-top: 2.5rem;
-  font-size: 0.875rem;
+.desktopLogo {
+  @apply h-16 hidden md:flex items-center px-6 border-b border-slate-200 dark:border-slate-700/50 text-lg font-bold gap-2 text-slate-800 dark:text-slate-100;
+}
+
+.logoIcon {
+  @apply w-8 h-8 rounded-lg bg-emerald-600 dark:bg-gradient-to-br dark:from-emerald-500 dark:to-teal-600 text-white flex items-center justify-center shadow-sm dark:shadow-lg dark:shadow-emerald-500/30 dark:border dark:border-emerald-400/30;
+}
+
+.navLinks {
+  @apply flex-1 py-6 px-4 space-y-1 overflow-y-auto;
+}
+
+.navItem {
+  @apply flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm font-medium;
+}
+
+.navItemActive {
+  @apply bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 dark:border dark:border-emerald-500/20 dark:shadow-[inset_0_0_12px_rgba(16,185,129,0.05)];
+}
+
+.navItemDefault {
+  @apply text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200 border border-transparent;
+}
+
+.navIconActive {
+  @apply text-lg text-emerald-600 dark:text-emerald-400 dark:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)];
+}
+
+.navIconDefault {
+  @apply text-lg text-slate-400 dark:text-slate-500;
+}
+
+.sidebarFooter {
+  @apply p-4 border-t border-slate-200 dark:border-slate-700/50;
+}
+
+.userProfile {
+  @apply flex items-center gap-3 px-3 py-3 mb-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50;
+}
+
+.userAvatar {
+  @apply w-8 h-8 rounded-full bg-emerald-100 dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-500/30 flex items-center justify-center;
+}
+
+.userInfo {
+  @apply flex-1 min-w-0;
+}
+
+.userName {
+  @apply text-sm font-bold text-slate-800 dark:text-slate-200 truncate;
+}
+
+.userEmail {
+  @apply text-xs text-slate-500 dark:text-slate-400 truncate;
+}
+
+.logoutBtn {
+  @apply w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 dark:hover:text-red-300 border border-transparent dark:hover:border-red-500/20 transition-all;
+}
+
+.mainContent {
+  @apply flex-1 overflow-y-auto h-[calc(100vh-4rem)] md:h-screen bg-transparent relative z-10;
+}
+
+.desktopHeader {
+  @apply hidden md:flex h-16 bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border-b border-slate-200 dark:border-slate-700/50 items-center justify-end px-6 sticky top-0 z-10 w-full shadow-sm;
+}
+
+.headerDate {
+  @apply text-sm text-slate-600 dark:text-slate-400 font-medium tracking-wide;
+}
+
+.contentWrapper {
+  @apply w-full;
+}
+
+.themeBtn {
+  @apply p-2 text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-lg transition-colors flex items-center justify-center;
+}
+
+.themeDropdown {
+  @apply absolute right-0 top-full mt-2 w-36 bg-white dark:bg-slate-800/90 backdrop-blur-xl border border-slate-200 dark:border-slate-700/50 rounded-xl shadow-lg shadow-slate-200/50 dark:shadow-black/40 overflow-hidden z-50 animate-slideUpFade;
+}
+
+.themeOption {
+  @apply w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors text-left;
+}
+
+.themeOptionActive {
+  @apply text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10;
+}
+
+.themeOptionDefault {
+  @apply text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-100;
+}
+
+/* Login Styles */
+@custom-variant dark (&:where(.dark, .dark *));
+
+.container {
+  @apply min-h-screen bg-slate-50 dark:bg-[#0a0f1c] flex items-center justify-center px-4 py-8 sm:px-6 relative overflow-hidden transition-colors duration-300;
+}
+
+.bgLayer {
+  @apply absolute inset-0 overflow-hidden;
+}
+
+.orb1 {
+  @apply absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-emerald-500/10 dark:bg-emerald-600/20 blur-[140px] pointer-events-none animate-pulse-slow;
+}
+
+.orb2 {
+  @apply absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-blue-500/10 dark:bg-blue-600/15 blur-[150px] pointer-events-none animate-pulse-slow delay-1000;
+}
+
+.orb3 {
+  @apply absolute top-[30%] right-[15%] w-[25%] h-[25%] rounded-full bg-purple-500/5 dark:bg-purple-600/10 blur-[100px] pointer-events-none animate-pulse-slow delay-500;
+}
+
+.orb4 {
+  @apply absolute bottom-[20%] left-[10%] w-[30%] h-[30%] rounded-full bg-cyan-500/5 dark:bg-cyan-600/10 blur-[120px] pointer-events-none animate-pulse-slow delay-700;
+}
+
+.gridPattern {
+  @apply absolute inset-0 opacity-[0.15] dark:opacity-50 pointer-events-none;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cpattern id='grid' width='60' height='60' patternUnits='userSpaceOnUse'%3E%3Cpath d='M 60 0 L 0 0 0 60' fill='none' stroke='currentColor' stroke-width='1'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23grid)'/%3E%3C/svg%3E");
+  color: rgba(148, 163, 184, 0.2); /* For light mode */
+}
+.dark .gridPattern {
+  color: rgba(255, 255, 255, 0.03); /* For dark mode */
+}
+
+.wrapper {
+  @apply w-full max-w-[28rem] relative z-10 animate-slideUpFade;
+}
+
+.logoContainer {
+  @apply flex justify-center mb-6;
+}
+
+.logoWrapper {
+  @apply relative;
+}
+
+.logoGlow {
+  @apply absolute inset-0 bg-emerald-500 blur-2xl opacity-20 dark:opacity-30 rounded-full animate-pulse-slow;
+}
+
+.logoIcon {
+  @apply w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20 dark:shadow-emerald-500/30 relative border border-emerald-400/20 dark:border-emerald-400/30;
+}
+
+.glassCard {
+  @apply bg-white/80 dark:bg-slate-900/70 backdrop-blur-xl rounded-3xl border border-white/50 dark:border-slate-700/50 shadow-2xl shadow-slate-200/50 dark:shadow-black/40 overflow-hidden transition-all duration-300;
+}
+
+.cardBody {
+  @apply px-6 py-8 sm:px-8;
+}
+
+.header {
+  @apply text-center mb-6;
+}
+
+.title {
+  @apply text-2xl sm:text-3xl font-bold mb-2 text-slate-800 dark:text-slate-100;
+}
+
+.titleGradient {
+  @apply bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent;
+}
+
+.subtitle {
+  @apply text-slate-500 dark:text-slate-400 text-sm;
+}
+
+.alertError {
+  @apply mb-4 bg-red-50 dark:bg-red-500/10 backdrop-blur-sm text-red-600 dark:text-red-400 p-3 rounded-xl border border-red-200 dark:border-red-500/30 flex items-start gap-3 animate-slideRightFade;
+}
+
+.alertSuccess {
+  @apply mb-4 bg-emerald-50 dark:bg-emerald-500/10 backdrop-blur-sm text-emerald-600 dark:text-emerald-400 p-3 rounded-xl border border-emerald-200 dark:border-emerald-500/30 flex items-start gap-3 animate-slideRightFade;
+}
+
+.closeButton {
+  @apply text-red-400 hover:text-red-600 dark:text-red-400/70 dark:hover:text-red-400 transition-colors;
+}
+
+.formGroup {
+  @apply space-y-1;
+}
+
+.label {
+  @apply block text-xs font-semibold text-slate-600 dark:text-slate-300 ml-1;
+}
+
+.inputWrapper {
+  @apply relative;
+}
+
+.inputIcon {
+  @apply absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:group-focus-within:text-emerald-400 transition-colors z-10 text-base;
+}
+
+.inputField {
+  @apply w-full pl-10 pr-4 py-3 rounded-xl border transition-all outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500/60 placeholder:text-sm text-slate-800 dark:text-slate-100 text-sm;
+}
+
+.inputFieldValid {
+  @apply bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700/50 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 shadow-sm dark:shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)];
+}
+
+.inputFieldError {
+  @apply bg-red-50 dark:bg-red-500/5 border-red-300 dark:border-red-500/50 focus:border-red-500 focus:ring-1 focus:ring-red-500/50 shadow-sm;
+}
+
+.inputActionIcon {
+  @apply absolute right-3.5 top-1/2 -translate-y-1/2;
+}
+
+.errorText {
+  @apply text-xs text-red-500 dark:text-red-400 ml-1;
+}
+
+.passwordToggle {
+  @apply absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-all;
+}
+
+.strengthContainer {
+  @apply mt-1.5;
+}
+
+.strengthHeader {
+  @apply flex items-center justify-between mb-1;
+}
+
+.strengthLabel {
+  @apply text-xs text-slate-500 dark:text-slate-400;
+}
+
+.strengthValue {
+  @apply text-xs font-medium;
+}
+
+.strengthBarBg {
+  @apply h-1 bg-slate-200 dark:bg-slate-700/50 rounded-full overflow-hidden;
+}
+
+.strengthBar {
+  @apply h-full transition-all duration-300;
+}
+
+.reqDropdownDesktop {
+  @apply absolute z-50 left-full top-0 ml-3 w-64 bg-white dark:bg-slate-800/95 backdrop-blur-xl border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl shadow-slate-200/50 dark:shadow-2xl dark:shadow-black/50 p-3 hidden lg:block animate-slideLeftFade;
+}
+
+.reqHeaderDesktop {
+  @apply flex items-center gap-2 mb-2 pb-2 border-b border-slate-100 dark:border-slate-700;
+}
+
+.reqTitleDesktop {
+  @apply text-xs font-bold text-slate-700 dark:text-slate-200;
+}
+
+.reqList {
+  @apply space-y-1.5;
+}
+
+.reqItem {
+  @apply flex items-center gap-2 text-xs;
+}
+
+.reqDropdownMobile {
+  @apply mt-2 bg-slate-50 dark:bg-slate-800/60 backdrop-blur-sm border border-slate-200 dark:border-slate-700/50 rounded-xl p-3 lg:hidden animate-fadeIn;
+}
+
+.reqHeaderMobile {
+  @apply text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2;
+}
+
+.reqGridMobile {
+  @apply grid grid-cols-1 sm:grid-cols-2 gap-1.5;
+}
+
+.reqItemMobile {
+  @apply flex items-center gap-1.5;
+}
+
+.submitBtn {
+  @apply relative w-full py-3.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold rounded-xl shadow-lg shadow-emerald-600/20 dark:shadow-emerald-900/30 transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex justify-center items-center mt-6 border border-emerald-500/20 dark:border-emerald-400/20 overflow-hidden text-sm;
+}
+
+.shimmerEffect {
+  @apply absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent shimmer;
+}
+
+.toggleContainer {
+  @apply mt-6 text-center;
+}
+
+.toggleText {
+  @apply text-sm text-slate-500 dark:text-slate-400;
+}
+
+.toggleBtn {
+  @apply ml-2 text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-300 font-semibold hover:underline transition-all;
+}
+
+.footer {
+  @apply text-center mt-4;
+}
+
+.footerText {
+  @apply text-xs text-slate-400 dark:text-slate-500/60 font-medium tracking-wider;
 }

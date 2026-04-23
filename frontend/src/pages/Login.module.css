@@ -1,0 +1,219 @@
+@reference "../index.css";
+@custom-variant dark (&:where(.dark, .dark *));
+
+.container {
+  @apply min-h-screen bg-slate-50 dark:bg-[#0a0f1c] flex items-center justify-center px-4 py-8 sm:px-6 relative overflow-hidden transition-colors duration-300;
+}
+
+.bgLayer {
+  @apply absolute inset-0 overflow-hidden;
+}
+
+.orb1 {
+  @apply absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-emerald-500/10 dark:bg-emerald-600/20 blur-[140px] pointer-events-none animate-pulse-slow;
+}
+
+.orb2 {
+  @apply absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-blue-500/10 dark:bg-blue-600/15 blur-[150px] pointer-events-none animate-pulse-slow delay-1000;
+}
+
+.orb3 {
+  @apply absolute top-[30%] right-[15%] w-[25%] h-[25%] rounded-full bg-purple-500/5 dark:bg-purple-600/10 blur-[100px] pointer-events-none animate-pulse-slow delay-500;
+}
+
+.orb4 {
+  @apply absolute bottom-[20%] left-[10%] w-[30%] h-[30%] rounded-full bg-cyan-500/5 dark:bg-cyan-600/10 blur-[120px] pointer-events-none animate-pulse-slow delay-700;
+}
+
+.gridPattern {
+  @apply absolute inset-0 opacity-[0.15] dark:opacity-50 pointer-events-none;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cpattern id='grid' width='60' height='60' patternUnits='userSpaceOnUse'%3E%3Cpath d='M 60 0 L 0 0 0 60' fill='none' stroke='currentColor' stroke-width='1'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23grid)'/%3E%3C/svg%3E");
+  color: rgba(148, 163, 184, 0.2); /* For light mode */
+}
+.dark .gridPattern {
+  color: rgba(255, 255, 255, 0.03); /* For dark mode */
+}
+
+.wrapper {
+  @apply w-full max-w-[28rem] relative z-10 animate-slideUpFade;
+}
+
+.logoContainer {
+  @apply flex justify-center mb-6;
+}
+
+.logoWrapper {
+  @apply relative;
+}
+
+.logoGlow {
+  @apply absolute inset-0 bg-emerald-500 blur-2xl opacity-20 dark:opacity-30 rounded-full animate-pulse-slow;
+}
+
+.logoIcon {
+  @apply w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20 dark:shadow-emerald-500/30 relative border border-emerald-400/20 dark:border-emerald-400/30;
+}
+
+.glassCard {
+  @apply bg-white/80 dark:bg-slate-900/70 backdrop-blur-xl rounded-3xl border border-white/50 dark:border-slate-700/50 shadow-2xl shadow-slate-200/50 dark:shadow-black/40 overflow-hidden transition-all duration-300;
+}
+
+.cardBody {
+  @apply px-6 py-8 sm:px-8;
+}
+
+.header {
+  @apply text-center mb-6;
+}
+
+.title {
+  @apply text-2xl sm:text-3xl font-bold mb-2 text-slate-800 dark:text-slate-100;
+}
+
+.titleGradient {
+  @apply bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent;
+}
+
+.subtitle {
+  @apply text-slate-500 dark:text-slate-400 text-sm;
+}
+
+.alertError {
+  @apply mb-4 bg-red-50 dark:bg-red-500/10 backdrop-blur-sm text-red-600 dark:text-red-400 p-3 rounded-xl border border-red-200 dark:border-red-500/30 flex items-start gap-3 animate-slideRightFade;
+}
+
+.alertSuccess {
+  @apply mb-4 bg-emerald-50 dark:bg-emerald-500/10 backdrop-blur-sm text-emerald-600 dark:text-emerald-400 p-3 rounded-xl border border-emerald-200 dark:border-emerald-500/30 flex items-start gap-3 animate-slideRightFade;
+}
+
+.closeButton {
+  @apply text-red-400 hover:text-red-600 dark:text-red-400/70 dark:hover:text-red-400 transition-colors;
+}
+
+.formGroup {
+  @apply space-y-1;
+}
+
+.label {
+  @apply block text-xs font-semibold text-slate-600 dark:text-slate-300 ml-1;
+}
+
+.inputWrapper {
+  @apply relative;
+}
+
+.inputIcon {
+  @apply absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:group-focus-within:text-emerald-400 transition-colors z-10 text-base;
+}
+
+.inputField {
+  @apply w-full pl-10 pr-4 py-3 rounded-xl border transition-all outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500/60 placeholder:text-sm text-slate-800 dark:text-slate-100 text-sm;
+}
+
+.inputFieldValid {
+  @apply bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700/50 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 shadow-sm dark:shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)];
+}
+
+.inputFieldError {
+  @apply bg-red-50 dark:bg-red-500/5 border-red-300 dark:border-red-500/50 focus:border-red-500 focus:ring-1 focus:ring-red-500/50 shadow-sm;
+}
+
+.inputActionIcon {
+  @apply absolute right-3.5 top-1/2 -translate-y-1/2;
+}
+
+.errorText {
+  @apply text-xs text-red-500 dark:text-red-400 ml-1;
+}
+
+.passwordToggle {
+  @apply absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-all;
+}
+
+.strengthContainer {
+  @apply mt-1.5;
+}
+
+.strengthHeader {
+  @apply flex items-center justify-between mb-1;
+}
+
+.strengthLabel {
+  @apply text-xs text-slate-500 dark:text-slate-400;
+}
+
+.strengthValue {
+  @apply text-xs font-medium;
+}
+
+.strengthBarBg {
+  @apply h-1 bg-slate-200 dark:bg-slate-700/50 rounded-full overflow-hidden;
+}
+
+.strengthBar {
+  @apply h-full transition-all duration-300;
+}
+
+.reqDropdownDesktop {
+  @apply absolute z-50 left-full top-0 ml-3 w-64 bg-white dark:bg-slate-800/95 backdrop-blur-xl border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl shadow-slate-200/50 dark:shadow-2xl dark:shadow-black/50 p-3 hidden lg:block animate-slideLeftFade;
+}
+
+.reqHeaderDesktop {
+  @apply flex items-center gap-2 mb-2 pb-2 border-b border-slate-100 dark:border-slate-700;
+}
+
+.reqTitleDesktop {
+  @apply text-xs font-bold text-slate-700 dark:text-slate-200;
+}
+
+.reqList {
+  @apply space-y-1.5;
+}
+
+.reqItem {
+  @apply flex items-center gap-2 text-xs;
+}
+
+.reqDropdownMobile {
+  @apply mt-2 bg-slate-50 dark:bg-slate-800/60 backdrop-blur-sm border border-slate-200 dark:border-slate-700/50 rounded-xl p-3 lg:hidden animate-fadeIn;
+}
+
+.reqHeaderMobile {
+  @apply text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2;
+}
+
+.reqGridMobile {
+  @apply grid grid-cols-1 sm:grid-cols-2 gap-1.5;
+}
+
+.reqItemMobile {
+  @apply flex items-center gap-1.5;
+}
+
+.submitBtn {
+  @apply relative w-full py-3.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold rounded-xl shadow-lg shadow-emerald-600/20 dark:shadow-emerald-900/30 transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex justify-center items-center mt-6 border border-emerald-500/20 dark:border-emerald-400/20 overflow-hidden text-sm;
+}
+
+.shimmerEffect {
+  @apply absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent shimmer;
+}
+
+.toggleContainer {
+  @apply mt-6 text-center;
+}
+
+.toggleText {
+  @apply text-sm text-slate-500 dark:text-slate-400;
+}
+
+.toggleBtn {
+  @apply ml-2 text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-300 font-semibold hover:underline transition-all;
+}
+
+.footer {
+  @apply text-center mt-4;
+}
+
+.footerText {
+  @apply text-xs text-slate-400 dark:text-slate-500/60 font-medium tracking-wider;
+}

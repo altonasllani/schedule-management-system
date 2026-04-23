@@ -1,67 +1,142 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import http from "../api/http";
 import { useNavigate } from "react-router-dom";
-import { FiEye, FiEyeOff, FiAlertCircle, FiCheckCircle, FiMonitor } from "react-icons/fi";
+import {
+  FiEye,
+  FiEyeOff,
+  FiAlertCircle,
+  FiCheckCircle,
+  FiMail,
+  FiLock,
+  FiUser,
+  FiHexagon,
+  FiXCircle,
+  FiShield
+} from "react-icons/fi";
 
 const Login = ({ setUser }) => {
   const [isRegister, setIsRegister] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", password: "", confirmPassword: "" });
+  const [form, setForm] = useState({ 
+    name: "", 
+    email: "", 
+    password: "", 
+    confirmPassword: "" 
+  });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
-  
+  const [touchedFields, setTouchedFields] = useState({});
+
   const navigate = useNavigate();
   const passwordRef = useRef(null);
   const requirementsRef = useRef(null);
+  const formRef = useRef(null);
 
-  const checkPasswordRequirements = () => {
+  // Memoized password requirements check
+  const checkPasswordRequirements = useCallback(() => {
+    const password = form.password || "";
+    const confirmPassword = form.confirmPassword || "";
+    
     return {
-      length: form.password.length >= 8,
-      uppercase: /[A-Z]/.test(form.password),
-      lowercase: /[a-z]/.test(form.password),
-      number: /[0-9]/.test(form.password),
-      special: /[!@#$%^&*(),.?":{}|<>]/.test(form.password),
-      match: form.password === form.confirmPassword && form.confirmPassword !== ""
+      length: password.length >= 8,
+      uppercase: /[A-Z]/.test(password),
+      lowercase: /[a-z]/.test(password),
+      number: /[0-9]/.test(password),
+      special: /[!@#$%^&*(),.?":{}|<>[\]]/.test(password),
+      match: password === confirmPassword && confirmPassword !== "",
     };
+  }, [form.password, form.confirmPassword]);
+
+  // Email validation
+  const isValidEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   };
+
+  // Name validation
+  const isValidName = (name) => {
+    return name && name.trim().length >= 2;
+  };
+
+  // Get password strength
+  const getPasswordStrength = useCallback(() => {
+    const req = checkPasswordRequirements();
+    const metRequirements = Object.values(req).filter(v => v === true).length;
+    
+    if (metRequirements <= 2) return { strength: "Weak", color: "text-red-400", width: "25%" };
+    if (metRequirements <= 4) return { strength: "Fair", color: "text-yellow-400", width: "50%" };
+    if (metRequirements <= 5) return { strength: "Good", color: "text-blue-400", width: "75%" };
+    return { strength: "Strong", color: "text-emerald-400", width: "100%" };
+  }, [checkPasswordRequirements]);
 
   const validateForm = () => {
     if (isRegister) {
-      if (!form.name.trim() || form.name.trim().length < 2) {
-        setError("Full name is required and must be at least 2 characters."); return false;
+      // Name validation
+      if (!isValidName(form.name)) {
+        setError("Full name must be at least 2 characters.");
+        return false;
       }
-      if (!/\S+@\S+\.\S+/.test(form.email)) {
-        setError("Invalid email format."); return false;
+      
+      // Email validation
+      if (!isValidEmail(form.email)) {
+        setError("Please enter a valid email address.");
+        return false;
       }
+      
+      // Password requirements
       const req = checkPasswordRequirements();
       if (!req.length || !req.uppercase || !req.lowercase || !req.number || !req.special) {
-        setError("Password must meet all security requirements."); return false;
+        setError("Password must meet all security requirements.");
+        return false;
       }
-      if (form.password !== form.confirmPassword) {
-        setError("Passwords do not match."); return false;
+      
+      // Password match
+      if (!req.match) {
+        setError("Passwords do not match.");
+        return false;
       }
     } else {
-      if (!form.email.trim() || !form.password) {
-        setError("Email and Password are required."); return false;
+      // Login validation
+      if (!form.email.trim()) {
+        setError("Email address is required.");
+        return false;
+      }
+      if (!isValidEmail(form.email)) {
+        setError("Please enter a valid email address.");
+        return false;
+      }
+      if (!form.password) {
+        setError("Password is required.");
+        return false;
       }
     }
+
     return true;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(""); setSuccess("");
+    setError("");
+    setSuccess("");
+    
     if (!validateForm()) return;
 
     setLoading(true);
     try {
       const endpoint = isRegister ? "/auth/register" : "/auth/login";
-      const payload = isRegister 
-        ? { name: form.name, email: form.email, password: form.password }
-        : { email: form.email, password: form.password };
+      const payload = isRegister
+        ? { 
+            name: form.name.trim(), 
+            email: form.email.trim().toLowerCase(), 
+            password: form.password 
+          }
+        : { 
+            email: form.email.trim().toLowerCase(), 
+            password: form.password 
+          };
 
       const res = await http.post(endpoint, payload);
       const { user, accessToken, refreshToken } = res.data;
@@ -69,13 +144,40 @@ const Login = ({ setUser }) => {
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("refreshToken", refreshToken);
       setUser(user);
+
+      setSuccess(isRegister ? "Account created successfully! Redirecting..." : "Login successful! Redirecting...");
       
-      setSuccess(isRegister ? "Registration successful!" : "Login successful!");
-      setTimeout(() => navigate("/"), 1000);
+      // Clear form
+      setForm({ name: "", email: "", password: "", confirmPassword: "" });
+      
+      // Redirect after delay
+      setTimeout(() => {
+        navigate("/");
+      }, 1500);
+      
     } catch (err) {
-      if (err.response?.status === 401) setError("Invalid email or password");
-      else if (err.response?.status === 409) setError("This email is already registered");
-      else setError(err.response?.data?.error || "Cannot connect to server. Please try again.");
+      console.error("Auth error:", err);
+      
+      if (!err.response) {
+        setError("Network error. Please check your connection and try again.");
+      } else {
+        switch (err.response.status) {
+          case 401:
+            setError("Invalid email or password. Please try again.");
+            break;
+          case 409:
+            setError("This email is already registered. Please log in instead.");
+            break;
+          case 429:
+            setError("Too many attempts. Please try again later.");
+            break;
+          case 500:
+            setError("Server error. Please try again later.");
+            break;
+          default:
+            setError(err.response?.data?.error || "An unexpected error occurred. Please try again.");
+        }
+      }
     } finally {
       setLoading(false);
     }
@@ -83,185 +185,400 @@ const Login = ({ setUser }) => {
 
   const toggleMode = () => {
     setIsRegister(!isRegister);
-    setError(""); setSuccess("");
+    setError("");
+    setSuccess("");
     setForm({ name: "", email: "", password: "", confirmPassword: "" });
     setShowPasswordRequirements(false);
+    setTouchedFields({});
+    setShowPassword(false);
+    setShowConfirmPassword(false);
   };
 
+  const handleFieldBlur = (fieldName) => {
+    setTouchedFields(prev => ({ ...prev, [fieldName]: true }));
+  };
+
+  const handlePasswordFocus = () => {
+    if (isRegister) {
+      setShowPasswordRequirements(true);
+    }
+  };
+
+  // Close requirements when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (showPasswordRequirements && 
-          passwordRef.current && 
-          requirementsRef.current &&
-          !passwordRef.current.contains(e.target) && 
-          !requirementsRef.current.contains(e.target)) {
+      if (
+        showPasswordRequirements &&
+        passwordRef.current &&
+        requirementsRef.current &&
+        !passwordRef.current.contains(e.target) &&
+        !requirementsRef.current.contains(e.target)
+      ) {
         setShowPasswordRequirements(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showPasswordRequirements]);
 
+  const requirements = [
+    { key: "length", text: "At least 8 characters", icon: FiCheckCircle },
+    { key: "uppercase", text: "One uppercase letter (A-Z)", icon: FiCheckCircle },
+    { key: "lowercase", text: "One lowercase letter (a-z)", icon: FiCheckCircle },
+    { key: "number", text: "One number (0-9)", icon: FiCheckCircle },
+    { key: "special", text: "One special character (!@#$%^&*)", icon: FiCheckCircle },
+  ];
+
+  const passwordStrength = getPasswordStrength();
+
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-inter text-slate-800">
-      <div className="large-login-container">
-        <div className="large-login-card">
-          <div className="card-content">
+    <div className="container">
+      
+      {/* Animated Background Elements */}
+      <div className="bgLayer">
+        <div className="orb1"></div>
+        <div className="orb2"></div>
+        <div className="orb3"></div>
+        <div className="orb4"></div>
+      </div>
+
+      {/* Grid Pattern Overlay */}
+      <div className="gridPattern" />
+
+      <div className="wrapper">
+        
+        {/* Logo */}
+        <div className="logoContainer">
+          <div className="logoWrapper">
+            <div className="logoGlow"></div>
+            <div className="logoIcon">
+              <FiHexagon className="text-3xl" />
+            </div>
+          </div>
+        </div>
+
+        {/* Main Card */}
+        <div className="glassCard">
+          
+          <div className="cardBody">
             
-            <div className="text-center mb-8">
-              <div className="flex justify-center mb-4">
-                <div className="w-12 h-12 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-200">
-                  <FiMonitor className="text-2xl" />
-                </div>
-              </div>
-              <h1 className="title font-bold text-slate-900 mb-2">Schedule System</h1>
-              <p className="subtitle text-slate-500">{isRegister ? "Create a new account" : "Login to your account"}</p>
+            {/* Header */}
+            <div className="header">
+              <h1 className="title">
+                <span className="titleGradient">Schedule</span>
+                <span className="text-white"> System</span>
+              </h1>
+              <p className="subtitle">
+                {isRegister ? "Create your account to get started" : "Welcome back! Please enter your details"}
+              </p>
             </div>
 
-          {error && (
-            <div className="mb-6 bg-red-50 text-red-700 p-3 rounded-lg border border-red-100 flex items-start gap-2 text-sm">
-              <FiAlertCircle className="mt-0.5 flex-shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {success && (
-            <div className="mb-6 bg-emerald-50 text-emerald-700 p-3 rounded-lg border border-emerald-100 flex items-start gap-2 text-sm">
-              <FiCheckCircle className="mt-0.5 flex-shrink-0" />
-              <span>{success}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {isRegister && (
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
-                <input
-                  type="text" required
-                  placeholder="Enter your full name"
-                  className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all placeholder:text-slate-400 text-sm bg-slate-50 focus:bg-white"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  disabled={loading}
-                />
+            {/* Error Alert */}
+            {error && (
+              <div className="alertError">
+                <FiAlertCircle className="mt-0.5 flex-shrink-0" />
+                <span className="text-sm flex-1">{error}</span>
+                <button 
+                  onClick={() => setError("")}
+                  className="closeButton"
+                  aria-label="Dismiss error"
+                >
+                  <FiXCircle className="text-base" />
+                </button>
               </div>
             )}
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-              <input
-                type="email" required
-                placeholder="email@example.com"
-                className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all placeholder:text-slate-400 text-sm bg-slate-50 focus:bg-white"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                disabled={loading}
-              />
-            </div>
-
-            <div className="relative" ref={passwordRef}>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"} required
-                  placeholder={isRegister ? "At least 8 characters" : "Enter your password"}
-                  className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all placeholder:text-slate-400 text-sm pr-10 bg-slate-50 focus:bg-white"
-                  value={form.password}
-                  onChange={(e) => {
-                    setForm({ ...form, password: e.target.value });
-                    if (isRegister) setShowPasswordRequirements(true);
-                  }}
-                  disabled={loading}
-                />
-                <button
-                  type="button" tabIndex={-1}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-600 p-1 rounded-md hover:bg-emerald-50 transition-colors"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? <FiEyeOff /> : <FiEye />}
-                </button>
+            {/* Success Alert */}
+            {success && (
+              <div className="alertSuccess">
+                <FiCheckCircle className="mt-0.5 flex-shrink-0" />
+                <span className="text-sm flex-1">{success}</span>
               </div>
+            )}
 
-              {isRegister && showPasswordRequirements && form.password.length > 0 && (
-                <div ref={requirementsRef} className="password-requirements-tooltip animate-fadeIn">
-                  <p className="text-sm font-semibold text-slate-700 mb-3 border-b border-slate-100 pb-2">Security Requirements:</p>
-                  <ul className="text-sm space-y-2">
-                    {[
-                      { key: 'length', text: 'At least 8 characters' },
-                      { key: 'uppercase', text: 'One uppercase letter' },
-                      { key: 'lowercase', text: 'One lowercase letter' },
-                      { key: 'number', text: 'One number (0-9)' },
-                      { key: 'special', text: 'One special character' },
-                      { key: 'match', text: 'Passwords must match' }
-                    ].map(req => {
-                      if (req.key === 'match' && form.confirmPassword === "") return null;
-                      const isValid = checkPasswordRequirements()[req.key];
-                      return (
-                        <li key={req.key} className="flex items-center gap-2">
-                          <FiCheckCircle className={isValid ? "text-emerald-500" : "text-slate-300"} />
-                          <span className={isValid ? "text-slate-800" : "text-slate-500 transition-colors"}>{req.text}</span>
-                        </li>
-                      );
-                    })}
-                  </ul>
+            {/* Form */}
+            <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
+              
+              {/* Name Field (Register only) */}
+              {isRegister && (
+                <div className="formGroup">
+                  <label className="label">
+                    Full Name
+                  </label>
+                  <div className={`${"inputWrapper"} group`}>
+                    <FiUser className="inputIcon" />
+                    <input
+                      type="text"
+                      required
+                      placeholder="John Doe"
+                      className={`${"inputField"} ${
+                        touchedFields.name && !isValidName(form.name) && form.name.length > 0
+                          ? "inputFieldError"
+                          : "inputFieldValid"
+                      }`}
+                      value={form.name}
+                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      onBlur={() => handleFieldBlur('name')}
+                      onFocus={() => setShowPasswordRequirements(false)}
+                      disabled={loading}
+                    />
+                    {touchedFields.name && form.name.length > 0 && (
+                      <div className="inputActionIcon">
+                        {isValidName(form.name) ? (
+                          <FiCheckCircle className="text-emerald-400 text-base" />
+                        ) : (
+                          <FiAlertCircle className="text-red-400 text-base" />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {touchedFields.name && !isValidName(form.name) && form.name.length > 0 && (
+                    <p className="errorText">Name must be at least 2 characters</p>
+                  )}
                 </div>
               )}
-            </div>
 
-            {isRegister && (
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Confirm Password</label>
-                <div className="relative">
+              {/* Email Field */}
+              <div className="formGroup">
+                <label className="label">
+                  Email Address
+                </label>
+                <div className="inputWrapper">
+                  <FiMail className="inputIcon" />
                   <input
-                    type={showConfirmPassword ? "text" : "password"} required
-                    placeholder="Repeat your password"
-                    className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all placeholder:text-slate-400 text-sm pr-10 bg-slate-50 focus:bg-white"
-                    value={form.confirmPassword}
-                    onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                    type="email"
+                    required
+                    placeholder="email@domain.com"
+                    className={`${"inputField"} ${
+                      touchedFields.email && !isValidEmail(form.email) && form.email.length > 0
+                        ? "inputFieldError"
+                        : "inputFieldValid"
+                    }`}
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    onBlur={() => handleFieldBlur('email')}
+                    onFocus={() => setShowPasswordRequirements(false)}
+                    disabled={loading}
+                  />
+                  {touchedFields.email && form.email.length > 0 && (
+                    <div className="inputActionIcon">
+                      {isValidEmail(form.email) ? (
+                        <FiCheckCircle className="text-emerald-400 text-base" />
+                      ) : (
+                        <FiAlertCircle className="text-red-400 text-base" />
+                      )}
+                    </div>
+                  )}
+                </div>
+                {touchedFields.email && !isValidEmail(form.email) && form.email.length > 0 && (
+                  <p className="errorText">Please enter a valid email address</p>
+                )}
+              </div>
+
+              {/* Password Field */}
+              <div className="formGroup" ref={passwordRef}>
+                <label className="label">
+                  Password
+                </label>
+                <div className="inputWrapper">
+                  <FiLock className="inputIcon" />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    placeholder={isRegister ? "Create password" : "••••••••"}
+                    className={`${"inputField"} ${"inputFieldValid"}`}
+                    value={form.password}
+                    onChange={(e) => {
+                      setForm({ ...form, password: e.target.value });
+                      if (isRegister && !showPasswordRequirements) {
+                        setShowPasswordRequirements(true);
+                      }
+                    }}
+                    onFocus={handlePasswordFocus}
                     disabled={loading}
                   />
                   <button
-                    type="button" tabIndex={-1}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-600 p-1 rounded-md hover:bg-emerald-50 transition-colors"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    type="button"
+                    className="passwordToggle"
+                    onClick={() => setShowPassword(!showPassword)}
+                    tabIndex={-1}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
                   >
-                    {showConfirmPassword ? <FiEyeOff /> : <FiEye />}
+                    {showPassword ? <FiEyeOff className="text-base" /> : <FiEye className="text-base" />}
                   </button>
                 </div>
+
+                {/* Password Strength Indicator (Register only) */}
+                {isRegister && form.password.length > 0 && (
+                  <div className="strengthContainer">
+                    <div className="strengthHeader">
+                      <span className="strengthLabel">Strength:</span>
+                      <span className={`${"strengthValue"} ${passwordStrength.color}`}>
+                        {passwordStrength.strength}
+                      </span>
+                    </div>
+                    <div className="strengthBarBg">
+                      <div 
+                        className={`${"strengthBar"} ${
+                          passwordStrength.strength === "Weak" ? "bg-red-400" :
+                          passwordStrength.strength === "Fair" ? "bg-yellow-400" :
+                          passwordStrength.strength === "Good" ? "bg-blue-400" :
+                          "bg-emerald-400"
+                        }`}
+                        style={{ width: passwordStrength.width }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Password Requirements Dropdown (Desktop) */}
+                {isRegister && showPasswordRequirements && (
+                  <div 
+                    ref={requirementsRef}
+                    className="reqDropdownDesktop"
+                  >
+                    <div className="reqHeaderDesktop">
+                      <FiShield className="text-emerald-400 text-sm" />
+                      <p className="reqTitleDesktop">
+                        Requirements
+                      </p>
+                    </div>
+                    <ul className="reqList">
+                      {requirements.map((req) => {
+                        const isValid = checkPasswordRequirements()[req.key];
+                        return (
+                          <li key={req.key} className="reqItem">
+                            {isValid ? (
+                              <FiCheckCircle className="text-emerald-400 flex-shrink-0 text-xs" />
+                            ) : (
+                              <div className="w-3 h-3 rounded-full border-2 border-slate-600 flex-shrink-0" />
+                            )}
+                            <span className={isValid ? "text-slate-300" : "text-slate-500"}>
+                              {req.text}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+                
+                {/* Password Requirements (Mobile) */}
+                {isRegister && showPasswordRequirements && (
+                  <div className="reqDropdownMobile">
+                    <p className="reqHeaderMobile">
+                      <FiShield className="text-emerald-400" />
+                      Requirements
+                    </p>
+                    <div className="reqGridMobile">
+                      {requirements.map((req) => {
+                        const isValid = checkPasswordRequirements()[req.key];
+                        return (
+                          <div key={req.key} className="reqItemMobile">
+                            {isValid ? (
+                              <FiCheckCircle className="text-emerald-400 text-xs flex-shrink-0" />
+                            ) : (
+                              <div className="w-2.5 h-2.5 rounded-full border-2 border-slate-600 flex-shrink-0" />
+                            )}
+                            <span className={`text-xs ${isValid ? "text-slate-300" : "text-slate-500"}`}>
+                              {req.text}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              style={{ backgroundColor: '#059669' }}
-              className="w-full py-3 px-4 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-100 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center mt-6"
-            >
-              {loading ? (
-                <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-              ) : (isRegister ? "Create Account" : "Sign In to System")}
-            </button>
-          </form>
+              {/* Confirm Password Field (Register only) */}
+              {isRegister && (
+                <div className="formGroup">
+                  <label className="label">
+                    Confirm Password
+                  </label>
+                  <div className={`${"inputWrapper"} group`}>
+                    <FiLock className="inputIcon" />
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      required
+                      placeholder="Confirm password"
+                      className={`${"inputField"} ${
+                        form.confirmPassword && form.password !== form.confirmPassword
+                          ? "inputFieldError"
+                          : "inputFieldValid"
+                      }`}
+                      value={form.confirmPassword}
+                      onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                      onFocus={() => setShowPasswordRequirements(false)}
+                      disabled={loading}
+                    />
+                    <button
+                      type="button"
+                      className="passwordToggle"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      tabIndex={-1}
+                      aria-label={showConfirmPassword ? "Hide confirmation password" : "Show confirmation password"}
+                    >
+                      {showConfirmPassword ? <FiEyeOff className="text-base" /> : <FiEye className="text-base" />}
+                    </button>
+                    {form.confirmPassword && (
+                      <div className="absolute right-10 top-1/2 -translate-y-1/2">
+                        {form.password === form.confirmPassword ? (
+                          <FiCheckCircle className="text-emerald-400 text-base" />
+                        ) : (
+                          <FiAlertCircle className="text-red-400 text-base" />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {form.confirmPassword && form.password !== form.confirmPassword && (
+                    <p className="errorText">Passwords do not match</p>
+                  )}
+                </div>
+              )}
 
-          <div className="mt-8 text-center border-t border-slate-100 pt-6">
-            <p className="text-sm text-slate-600">
-              {isRegister ? "Already have an account?" : "New to the system?"}
-              <button 
-                onClick={toggleMode}
-                className="ml-2 text-emerald-600 hover:text-emerald-700 font-bold hover:underline"
+              {/* Submit Button */}
+              <button
+                type="submit"
                 disabled={loading}
+                className={`${"submitBtn"} group`}
               >
-                {isRegister ? "Sign In" : "Create an Account"}
+                {loading && (
+                  <div className="shimmerEffect" />
+                )}
+                {loading ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <span className="tracking-wide">
+                    {isRegister ? "Create Account" : "Sign In"}
+                  </span>
+                )}
               </button>
-            </p>
+            </form>
+
+            {/* Toggle Mode */}
+            <div className="toggleContainer">
+              <p className="toggleText">
+                {isRegister ? "Already have an account?" : "Don't have an account?"}
+                <button
+                  onClick={toggleMode}
+                  className="toggleBtn"
+                  disabled={loading}
+                >
+                  {isRegister ? "Sign In" : "Create Account"}
+                </button>
+              </p>
+            </div>
           </div>
-          
-          </div>
-          <div className="bg-slate-50 p-6 text-center border-t border-slate-100 mb-0">
-            <p className="text-xs text-slate-500 font-medium">
-              © {new Date().getFullYear()} Schedule Management System v2.0
-            </p>
-          </div>
+        </div>
+        
+        {/* Footer */}
+        <div className="footer">
+          <p className="footerText">
+            &copy; {new Date().getFullYear()} Schedule Management System
+          </p>
         </div>
       </div>
     </div>

@@ -1,13 +1,27 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Outlet, useLocation, Link } from "react-router-dom";
-import { 
-  FiHome, FiBook, FiUsers, FiUser, FiMapPin, FiCalendar, 
-  FiLogOut, FiMenu, FiX, FiMonitor
+import {
+  FiHome,
+  FiBook,
+  FiUsers,
+  FiUser,
+  FiMapPin,
+  FiCalendar,
+  FiLogOut,
+  FiMenu,
+  FiX,
+  FiMonitor,
+  FiSun,
+  FiMoon,
 } from "react-icons/fi";
+import { useTheme } from "../contexts/ThemeContext";
 
 const MainLayout = ({ user, onLogout }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
   const location = useLocation();
+  const { theme, setTheme } = useTheme();
+  const themeMenuRef = useRef(null);
 
   const menuItems = [
     { name: "Dashboard", icon: <FiHome />, path: "/dashboard" },
@@ -18,59 +32,76 @@ const MainLayout = ({ user, onLogout }) => {
     { name: "Orari", icon: <FiCalendar />, path: "/semesters" },
   ];
 
+  // Close theme menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (themeMenuRef.current && !themeMenuRef.current.contains(event.target)) {
+        setIsThemeMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const ThemeIcon = theme === 'light' ? FiSun : theme === 'dark' ? FiMoon : FiMonitor;
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-inter flex flex-col md:flex-row">
-      
-      {/* Mobile Topbar */}
-      <div className="md:hidden bg-white border-b border-slate-200 h-16 flex items-center justify-between px-4 z-20">
-        <div className="flex items-center gap-2 font-bold text-lg">
-          <FiMonitor className="text-blue-600" />
+    <div className="layoutContainer">
+      <div className="mobileHeader">
+        <div className="mobileLogo">
+          <FiMonitor className="text-emerald-600" />
           Schedule System
         </div>
-        <button 
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg"
-        >
-          {isSidebarOpen ? <FiX className="text-xl" /> : <FiMenu className="text-xl" />}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsThemeMenuOpen(!isThemeMenuOpen)}
+            className="themeBtn"
+            aria-label="Toggle theme menu"
+          >
+            <ThemeIcon className="text-lg" />
+          </button>
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="mobileMenuBtn"
+            aria-label="Toggle navigation"
+          >
+            {isSidebarOpen ? <FiX className="text-xl" /> : <FiMenu className="text-xl" />}
+          </button>
+        </div>
       </div>
 
-      {/* Sidebar Overlay */}
       {isSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-slate-900/20 z-30 md:hidden"
+        <div
+          className="sidebarOverlay"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
-      <aside 
-        className={`${
-          isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-        } fixed md:relative z-40 w-64 h-full min-h-screen bg-white border-r border-slate-200 flex flex-col transition-transform duration-300 md:flex-shrink-0 shadow-sm md:shadow-none`}
+      <aside
+        className={`${"sidebar"} ${
+          isSidebarOpen ? "sidebarOpen" : "sidebarClosed"
+        }`}
       >
-        <div className="h-16 hidden md:flex items-center px-6 border-b border-slate-200 text-lg font-bold gap-2">
-          <div className="w-8 h-8 rounded bg-blue-600 text-white flex items-center justify-center">
+        <div className="desktopLogo">
+          <div className="logoIcon">
             <FiMonitor className="text-sm" />
           </div>
           <span>Schedule System</span>
         </div>
 
-        <div className="flex-1 py-6 px-4 space-y-1 overflow-y-auto">
-          {menuItems.map((item, idx) => {
+        <div className="navLinks">
+          {menuItems.map((item) => {
             const isActive = location.pathname.startsWith(item.path);
             return (
               <Link
-                key={idx}
+                key={item.path}
                 to={item.path}
                 onClick={() => setIsSidebarOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm font-medium ${
-                  isActive 
-                    ? "bg-blue-50 text-blue-700" 
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                className={`${"navItem"} ${
+                  isActive ? "navItemActive" : "navItemDefault"
                 }`}
               >
-                <span className={`text-lg ${isActive ? "text-blue-600" : "text-slate-400"}`}>
+                <span className={isActive ? "navIconActive" : "navIconDefault"}>
                   {item.icon}
                 </span>
                 {item.name}
@@ -79,20 +110,20 @@ const MainLayout = ({ user, onLogout }) => {
           })}
         </div>
 
-        <div className="p-4 border-t border-slate-200">
-          <div className="flex items-center gap-3 px-3 py-3 mb-2 rounded-lg bg-slate-50 border border-slate-100">
-            <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold border border-slate-300">
+        <div className="sidebarFooter">
+          <div className="userProfile">
+            <div className="userAvatar">
               {user?.name?.charAt(0).toUpperCase() || "U"}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-slate-800 truncate">{user?.name || "Përdorues"}</p>
-              <p className="text-xs text-slate-500 truncate">{user?.email || "user@domain.com"}</p>
+            <div className="userInfo">
+              <p className="userName">{user?.name || "Përdorues"}</p>
+              <p className="userEmail">{user?.email || "user@domain.com"}</p>
             </div>
           </div>
-          
-          <button 
+
+          <button
             onClick={onLogout}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+            className="logoutBtn"
           >
             <FiLogOut className="text-lg" />
             Kthehu te Login
@@ -100,14 +131,52 @@ const MainLayout = ({ user, onLogout }) => {
         </div>
       </aside>
 
-      {/* Main Area */}
-      <main className="flex-1 overflow-y-auto h-[calc(100vh-4rem)] md:h-screen bg-slate-50">
-        <div className="hidden md:flex h-16 bg-white border-b border-slate-200 items-center justify-end px-6 sticky top-0 z-10 w-full">
-          <div className="text-sm text-slate-500">
-            {new Date().toLocaleDateString('sq-AL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+      <main className="mainContent">
+        <div className="desktopHeader">
+          <div className="flex items-center justify-between w-full">
+            <div className="headerDate">
+              {new Date().toLocaleDateString("sq-AL", {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </div>
+            <div className="relative" ref={themeMenuRef}>
+              <button
+                onClick={() => setIsThemeMenuOpen(!isThemeMenuOpen)}
+                className="themeBtn"
+                aria-label="Theme settings"
+              >
+                <ThemeIcon className="text-lg" />
+              </button>
+              
+              {isThemeMenuOpen && (
+                <div className="themeDropdown">
+                  <button
+                    onClick={() => { setTheme('light'); setIsThemeMenuOpen(false); }}
+                    className={`${"themeOption"} ${theme === 'light' ? "themeOptionActive" : "themeOptionDefault"}`}
+                  >
+                    <FiSun /> Light
+                  </button>
+                  <button
+                    onClick={() => { setTheme('dark'); setIsThemeMenuOpen(false); }}
+                    className={`${"themeOption"} ${theme === 'dark' ? "themeOptionActive" : "themeOptionDefault"}`}
+                  >
+                    <FiMoon /> Dark
+                  </button>
+                  <button
+                    onClick={() => { setTheme('system'); setIsThemeMenuOpen(false); }}
+                    className={`${"themeOption"} ${theme === 'system' ? "themeOptionActive" : "themeOptionDefault"}`}
+                  >
+                    <FiMonitor /> System
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-        <div className="w-full">
+        <div className="contentWrapper">
           <Outlet />
         </div>
       </main>
