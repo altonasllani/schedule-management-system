@@ -29,7 +29,7 @@ const MainLayout = ({ user, onLogout }) => {
     { name: "Grupet", icon: <FiUsers />, path: "/groups" },
     { name: "Profesorët", icon: <FiUser />, path: "/professors" },
     { name: "Dhomat", icon: <FiMapPin />, path: "/rooms" },
-    { name: "Orari", icon: <FiCalendar />, path: "/semesters" },
+    { name: "Orari", icon: <FiCalendar />, path: "/timetable" },
   ];
 
   // Close theme menu when clicking outside
@@ -49,23 +49,23 @@ const MainLayout = ({ user, onLogout }) => {
     <div className="layoutContainer">
       <div className="mobileHeader">
         <div className="mobileLogo">
-          <FiMonitor className="text-emerald-600" />
+          <FiMonitor className="mobileLogoIcon" />
           Schedule System
         </div>
-        <div className="flex items-center gap-2">
+        <div className="mobileHeaderActions">
           <button
             onClick={() => setIsThemeMenuOpen(!isThemeMenuOpen)}
             className="themeBtn"
             aria-label="Toggle theme menu"
           >
-            <ThemeIcon className="text-lg" />
+            <ThemeIcon className="icon-lg" />
           </button>
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             className="mobileMenuBtn"
             aria-label="Toggle navigation"
           >
-            {isSidebarOpen ? <FiX className="text-xl" /> : <FiMenu className="text-xl" />}
+            {isSidebarOpen ? <FiX className="icon-xl" /> : <FiMenu className="icon-xl" />}
           </button>
         </div>
       </div>
@@ -84,7 +84,7 @@ const MainLayout = ({ user, onLogout }) => {
       >
         <div className="desktopLogo">
           <div className="logoIcon">
-            <FiMonitor className="text-sm" />
+            <FiMonitor className="icon-sm" />
           </div>
           <span>Schedule System</span>
         </div>
@@ -125,7 +125,7 @@ const MainLayout = ({ user, onLogout }) => {
             onClick={onLogout}
             className="logoutBtn"
           >
-            <FiLogOut className="text-lg" />
+            <FiLogOut className="icon-lg" />
             Kthehu te Login
           </button>
         </div>
@@ -133,7 +133,7 @@ const MainLayout = ({ user, onLogout }) => {
 
       <main className="mainContent">
         <div className="desktopHeader">
-          <div className="flex items-center justify-between w-full">
+          <div className="desktopHeaderInner">
             <div className="headerDate">
               {new Date().toLocaleDateString("sq-AL", {
                 weekday: "long",
@@ -142,13 +142,13 @@ const MainLayout = ({ user, onLogout }) => {
                 day: "numeric",
               })}
             </div>
-            <div className="relative" ref={themeMenuRef}>
+            <div className="themeMenuRoot" ref={themeMenuRef}>
               <button
                 onClick={() => setIsThemeMenuOpen(!isThemeMenuOpen)}
                 className="themeBtn"
                 aria-label="Theme settings"
               >
-                <ThemeIcon className="text-lg" />
+                <ThemeIcon className="icon-lg" />
               </button>
               
               {isThemeMenuOpen && (

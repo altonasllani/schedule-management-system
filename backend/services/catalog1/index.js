@@ -238,6 +238,45 @@ app.delete('/api/professors/:id', async (req, res) => {
 });
 
 // ==================== SESSIONS - CRUD COMPLETE ====================
+const findSessionConflict = async ({ id, course_id, group_id, room_id, professor_id, semester_id, day_of_week, start_time, end_time, week_type }) => {
+  const params = [
+    day_of_week,
+    semester_id,
+    start_time,
+    end_time,
+    week_type || 'all',
+    room_id,
+    professor_id,
+    group_id
+  ];
+
+  const excludeClause = id ? 'AND s.id <> $9' : '';
+  if (id) params.push(id);
+
+  const result = await pool.query(`
+    SELECT s.*,
+           c.name as course_name,
+           g.name as group_name,
+           r.name as room_name,
+           p.name as professor_name
+    FROM sessions s
+    LEFT JOIN courses c ON s.course_id = c.id
+    LEFT JOIN groups g ON s.group_id = g.id
+    LEFT JOIN rooms r ON s.room_id = r.id
+    LEFT JOIN professors p ON s.professor_id = p.id
+    WHERE s.day_of_week = $1
+      AND s.semester_id = $2
+      AND s.start_time < $4
+      AND $3 < s.end_time
+      AND (s.week_type = 'all' OR $5 = 'all' OR s.week_type = $5)
+      AND (s.room_id = $6 OR s.professor_id = $7 OR s.group_id = $8)
+      ${excludeClause}
+    LIMIT 1
+  `, params);
+
+  return result.rows[0] || null;
+};
+
 app.get('/api/sessions', async (req, res) => {
   try {
     const result = await pool.query(`
@@ -308,6 +347,24 @@ app.post('/api/sessions', async (req, res) => {
     if (course_id <= 0 || group_id <= 0 || room_id <= 0 || professor_id <= 0 || semester_id <= 0) {
       return res.status(400).json({ error: 'All IDs must be positive numbers' });
     }
+
+    const conflict = await findSessionConflict({
+      course_id,
+      group_id,
+      room_id,
+      professor_id,
+      semester_id,
+      day_of_week,
+      start_time,
+      end_time,
+      week_type: week_type || 'all'
+    });
+
+    if (conflict) {
+      return res.status(409).json({
+        error: `Schedule conflict with ${conflict.course_name || 'another session'} (${conflict.start_time}-${conflict.end_time})`
+      });
+    }
     
     const result = await pool.query(
       `INSERT INTO sessions 
@@ -340,6 +397,25 @@ app.put('/api/sessions/:id', async (req, res) => {
     }
     if (course_id <= 0 || group_id <= 0 || room_id <= 0 || professor_id <= 0 || semester_id <= 0) {
       return res.status(400).json({ error: 'All IDs must be positive numbers' });
+    }
+
+    const conflict = await findSessionConflict({
+      id,
+      course_id,
+      group_id,
+      room_id,
+      professor_id,
+      semester_id,
+      day_of_week,
+      start_time,
+      end_time,
+      week_type: week_type || 'all'
+    });
+
+    if (conflict) {
+      return res.status(409).json({
+        error: `Schedule conflict with ${conflict.course_name || 'another session'} (${conflict.start_time}-${conflict.end_time})`
+      });
     }
     
     const result = await pool.query(

@@ -1,13 +1,13 @@
 const Navbar = () => {
   return (
-    <header className="h-14 bg-slate-900 text-white flex items-center justify-between px-6">
-      <h1 className="text-lg font-semibold">Schedule Management System</h1>
+    <header className="legacy-navbar">
+      <h1 className="legacy-navbar-title">Schedule Management System</h1>
 
-      <div className="flex items-center gap-3">
-        <span className="text-sm">Admin</span>
+      <div className="legacy-navbar-user">
+        <span className="legacy-navbar-role">Admin</span>
         <img
           src="https://i.pravatar.cc/40"
-          className="rounded-full w-8 h-8"
+          className="legacy-navbar-avatar"
           alt="avatar"
         />
       </div>

@@ -66,10 +66,10 @@ const Login = ({ setUser }) => {
     const req = checkPasswordRequirements();
     const metRequirements = Object.values(req).filter(v => v === true).length;
     
-    if (metRequirements <= 2) return { strength: "Weak", color: "text-red-400", width: "25%" };
-    if (metRequirements <= 4) return { strength: "Fair", color: "text-yellow-400", width: "50%" };
-    if (metRequirements <= 5) return { strength: "Good", color: "text-blue-400", width: "75%" };
-    return { strength: "Strong", color: "text-emerald-400", width: "100%" };
+    if (metRequirements <= 2) return { strength: "Weak", color: "login-strength-weak", bar: "login-strength-bar-weak", width: "login-strength-width-weak" };
+    if (metRequirements <= 4) return { strength: "Fair", color: "login-strength-fair", bar: "login-strength-bar-fair", width: "login-strength-width-fair" };
+    if (metRequirements <= 5) return { strength: "Good", color: "login-strength-good", bar: "login-strength-bar-good", width: "login-strength-width-good" };
+    return { strength: "Strong", color: "login-strength-strong", bar: "login-strength-bar-strong", width: "login-strength-width-strong" };
   }, [checkPasswordRequirements]);
 
   const validateForm = () => {
@@ -233,89 +233,89 @@ const Login = ({ setUser }) => {
   const passwordStrength = getPasswordStrength();
 
   return (
-    <div className="container">
+    <div className="login-page">
       
       {/* Animated Background Elements */}
-      <div className="bgLayer">
-        <div className="orb1"></div>
-        <div className="orb2"></div>
-        <div className="orb3"></div>
-        <div className="orb4"></div>
+      <div className="login-bg-layer">
+        <div className="login-orb-1"></div>
+        <div className="login-orb-2"></div>
+        <div className="login-orb-3"></div>
+        <div className="login-orb-4"></div>
       </div>
 
       {/* Grid Pattern Overlay */}
-      <div className="gridPattern" />
+      <div className="login-grid-pattern" />
 
-      <div className="wrapper">
+      <div className="login-wrapper">
         
         {/* Logo */}
-        <div className="logoContainer">
-          <div className="logoWrapper">
-            <div className="logoGlow"></div>
-            <div className="logoIcon">
-              <FiHexagon className="text-3xl" />
+        <div className="login-logo-container">
+          <div className="login-logo-wrapper">
+            <div className="login-logo-glow"></div>
+            <div className="login-logo-icon">
+              <FiHexagon className="icon-3xl" />
             </div>
           </div>
         </div>
 
         {/* Main Card */}
-        <div className="glassCard">
+        <div className="login-card">
           
-          <div className="cardBody">
+          <div className="login-card-body">
             
             {/* Header */}
-            <div className="header">
-              <h1 className="title">
-                <span className="titleGradient">Schedule</span>
-                <span className="text-white"> System</span>
+            <div className="login-header">
+              <h1 className="login-title">
+                <span className="login-title-gradient">Schedule</span>
+                <span className="login-title-plain"> System</span>
               </h1>
-              <p className="subtitle">
+              <p className="login-subtitle">
                 {isRegister ? "Create your account to get started" : "Welcome back! Please enter your details"}
               </p>
             </div>
 
             {/* Error Alert */}
             {error && (
-              <div className="alertError">
-                <FiAlertCircle className="mt-0.5 flex-shrink-0" />
-                <span className="text-sm flex-1">{error}</span>
+              <div className="login-alert-error">
+                <FiAlertCircle className="icon-alert" />
+                <span className="login-alert-text">{error}</span>
                 <button 
                   onClick={() => setError("")}
-                  className="closeButton"
+                  className="login-close-button"
                   aria-label="Dismiss error"
                 >
-                  <FiXCircle className="text-base" />
+                  <FiXCircle className="icon-base" />
                 </button>
               </div>
             )}
 
             {/* Success Alert */}
             {success && (
-              <div className="alertSuccess">
-                <FiCheckCircle className="mt-0.5 flex-shrink-0" />
-                <span className="text-sm flex-1">{success}</span>
+              <div className="login-alert-success">
+                <FiCheckCircle className="icon-alert" />
+                <span className="login-alert-text">{success}</span>
               </div>
             )}
 
             {/* Form */}
-            <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
+            <form ref={formRef} onSubmit={handleSubmit} className="login-form">
               
               {/* Name Field (Register only) */}
               {isRegister && (
-                <div className="formGroup">
-                  <label className="label">
+                <div className="login-form-group">
+                  <label className="login-label">
                     Full Name
                   </label>
-                  <div className={`${"inputWrapper"} group`}>
-                    <FiUser className="inputIcon" />
+                  <div className="login-input-wrapper">
+                    <FiUser className="login-input-icon" />
                     <input
                       type="text"
                       required
                       placeholder="John Doe"
-                      className={`${"inputField"} ${
+                      className={`${"login-input"} ${
                         touchedFields.name && !isValidName(form.name) && form.name.length > 0
-                          ? "inputFieldError"
-                          : "inputFieldValid"
+                          ? "login-input-error"
+                          : "login-input-valid"
                       }`}
                       value={form.name}
                       onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -324,36 +324,36 @@ const Login = ({ setUser }) => {
                       disabled={loading}
                     />
                     {touchedFields.name && form.name.length > 0 && (
-                      <div className="inputActionIcon">
+                      <div className="login-input-action">
                         {isValidName(form.name) ? (
-                          <FiCheckCircle className="text-emerald-400 text-base" />
+                          <FiCheckCircle className="login-validation-success" />
                         ) : (
-                          <FiAlertCircle className="text-red-400 text-base" />
+                          <FiAlertCircle className="login-validation-error" />
                         )}
                       </div>
                     )}
                   </div>
                   {touchedFields.name && !isValidName(form.name) && form.name.length > 0 && (
-                    <p className="errorText">Name must be at least 2 characters</p>
+                    <p className="login-error-text">Name must be at least 2 characters</p>
                   )}
                 </div>
               )}
 
               {/* Email Field */}
-              <div className="formGroup">
-                <label className="label">
+              <div className="login-form-group">
+                <label className="login-label">
                   Email Address
                 </label>
-                <div className="inputWrapper">
-                  <FiMail className="inputIcon" />
+                <div className="login-input-wrapper">
+                  <FiMail className="login-input-icon" />
                   <input
                     type="email"
                     required
                     placeholder="email@domain.com"
-                    className={`${"inputField"} ${
+                    className={`${"login-input"} ${
                       touchedFields.email && !isValidEmail(form.email) && form.email.length > 0
-                        ? "inputFieldError"
-                        : "inputFieldValid"
+                        ? "login-input-error"
+                        : "login-input-valid"
                     }`}
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -362,32 +362,32 @@ const Login = ({ setUser }) => {
                     disabled={loading}
                   />
                   {touchedFields.email && form.email.length > 0 && (
-                    <div className="inputActionIcon">
+                    <div className="login-input-action">
                       {isValidEmail(form.email) ? (
-                        <FiCheckCircle className="text-emerald-400 text-base" />
+                        <FiCheckCircle className="login-validation-success" />
                       ) : (
-                        <FiAlertCircle className="text-red-400 text-base" />
+                        <FiAlertCircle className="login-validation-error" />
                       )}
                     </div>
                   )}
                 </div>
                 {touchedFields.email && !isValidEmail(form.email) && form.email.length > 0 && (
-                  <p className="errorText">Please enter a valid email address</p>
+                  <p className="login-error-text">Please enter a valid email address</p>
                 )}
               </div>
 
               {/* Password Field */}
-              <div className="formGroup" ref={passwordRef}>
-                <label className="label">
+              <div className="login-form-group" ref={passwordRef}>
+                <label className="login-label">
                   Password
                 </label>
-                <div className="inputWrapper">
-                  <FiLock className="inputIcon" />
+                <div className="login-input-wrapper">
+                  <FiLock className="login-input-icon" />
                   <input
                     type={showPassword ? "text" : "password"}
                     required
                     placeholder={isRegister ? "Create password" : "••••••••"}
-                    className={`${"inputField"} ${"inputFieldValid"}`}
+                    className={`${"login-input"} ${"login-input-valid"}`}
                     value={form.password}
                     onChange={(e) => {
                       setForm({ ...form, password: e.target.value });
@@ -400,33 +400,27 @@ const Login = ({ setUser }) => {
                   />
                   <button
                     type="button"
-                    className="passwordToggle"
+                    className="login-password-toggle"
                     onClick={() => setShowPassword(!showPassword)}
                     tabIndex={-1}
                     aria-label={showPassword ? "Hide password" : "Show password"}
                   >
-                    {showPassword ? <FiEyeOff className="text-base" /> : <FiEye className="text-base" />}
+                    {showPassword ? <FiEyeOff className="icon-base" /> : <FiEye className="icon-base" />}
                   </button>
                 </div>
 
                 {/* Password Strength Indicator (Register only) */}
                 {isRegister && form.password.length > 0 && (
-                  <div className="strengthContainer">
-                    <div className="strengthHeader">
-                      <span className="strengthLabel">Strength:</span>
-                      <span className={`${"strengthValue"} ${passwordStrength.color}`}>
+                  <div className="login-strength">
+                    <div className="login-strength-header">
+                      <span className="login-strength-label">Strength:</span>
+                      <span className={`strengthValue ${passwordStrength.color}`}>
                         {passwordStrength.strength}
                       </span>
                     </div>
-                    <div className="strengthBarBg">
+                    <div className="login-strength-track">
                       <div 
-                        className={`${"strengthBar"} ${
-                          passwordStrength.strength === "Weak" ? "bg-red-400" :
-                          passwordStrength.strength === "Fair" ? "bg-yellow-400" :
-                          passwordStrength.strength === "Good" ? "bg-blue-400" :
-                          "bg-emerald-400"
-                        }`}
-                        style={{ width: passwordStrength.width }}
+                        className={`strengthBar ${passwordStrength.bar} ${passwordStrength.width}`}
                       />
                     </div>
                   </div>
@@ -436,25 +430,25 @@ const Login = ({ setUser }) => {
                 {isRegister && showPasswordRequirements && (
                   <div 
                     ref={requirementsRef}
-                    className="reqDropdownDesktop"
+                    className="login-req-desktop"
                   >
-                    <div className="reqHeaderDesktop">
-                      <FiShield className="text-emerald-400 text-sm" />
-                      <p className="reqTitleDesktop">
+                    <div className="login-req-header-desktop">
+                      <FiShield className="login-req-shield" />
+                      <p className="login-req-title-desktop">
                         Requirements
                       </p>
                     </div>
-                    <ul className="reqList">
+                    <ul className="login-req-list">
                       {requirements.map((req) => {
                         const isValid = checkPasswordRequirements()[req.key];
                         return (
-                          <li key={req.key} className="reqItem">
+                          <li key={req.key} className="login-req-item">
                             {isValid ? (
-                              <FiCheckCircle className="text-emerald-400 flex-shrink-0 text-xs" />
+                              <FiCheckCircle className="login-req-icon-valid" />
                             ) : (
-                              <div className="w-3 h-3 rounded-full border-2 border-slate-600 flex-shrink-0" />
+                              <div className="login-req-icon-empty" />
                             )}
-                            <span className={isValid ? "text-slate-300" : "text-slate-500"}>
+                            <span className={isValid ? "login-req-text-valid" : "login-req-text-muted"}>
                               {req.text}
                             </span>
                           </li>
@@ -466,22 +460,22 @@ const Login = ({ setUser }) => {
                 
                 {/* Password Requirements (Mobile) */}
                 {isRegister && showPasswordRequirements && (
-                  <div className="reqDropdownMobile">
-                    <p className="reqHeaderMobile">
-                      <FiShield className="text-emerald-400" />
+                  <div className="login-req-mobile">
+                    <p className="login-req-header-mobile">
+                      <FiShield className="login-req-shield-mobile" />
                       Requirements
                     </p>
-                    <div className="reqGridMobile">
+                    <div className="login-req-grid-mobile">
                       {requirements.map((req) => {
                         const isValid = checkPasswordRequirements()[req.key];
                         return (
-                          <div key={req.key} className="reqItemMobile">
+                          <div key={req.key} className="login-req-item-mobile">
                             {isValid ? (
-                              <FiCheckCircle className="text-emerald-400 text-xs flex-shrink-0" />
+                              <FiCheckCircle className="login-req-icon-valid-mobile" />
                             ) : (
-                              <div className="w-2.5 h-2.5 rounded-full border-2 border-slate-600 flex-shrink-0" />
+                              <div className="login-req-icon-empty-mobile" />
                             )}
-                            <span className={`text-xs ${isValid ? "text-slate-300" : "text-slate-500"}`}>
+                            <span className={`login-req-text-mobile ${isValid ? "login-req-text-valid" : "login-req-text-muted"}`}>
                               {req.text}
                             </span>
                           </div>
@@ -494,20 +488,20 @@ const Login = ({ setUser }) => {
 
               {/* Confirm Password Field (Register only) */}
               {isRegister && (
-                <div className="formGroup">
-                  <label className="label">
+                <div className="login-form-group">
+                  <label className="login-label">
                     Confirm Password
                   </label>
-                  <div className={`${"inputWrapper"} group`}>
-                    <FiLock className="inputIcon" />
+                  <div className="login-input-wrapper">
+                    <FiLock className="login-input-icon" />
                     <input
                       type={showConfirmPassword ? "text" : "password"}
                       required
                       placeholder="Confirm password"
-                      className={`${"inputField"} ${
+                      className={`${"login-input"} ${
                         form.confirmPassword && form.password !== form.confirmPassword
-                          ? "inputFieldError"
-                          : "inputFieldValid"
+                          ? "login-input-error"
+                          : "login-input-valid"
                       }`}
                       value={form.confirmPassword}
                       onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
@@ -516,25 +510,25 @@ const Login = ({ setUser }) => {
                     />
                     <button
                       type="button"
-                      className="passwordToggle"
+                      className="login-password-toggle"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                       tabIndex={-1}
                       aria-label={showConfirmPassword ? "Hide confirmation password" : "Show confirmation password"}
                     >
-                      {showConfirmPassword ? <FiEyeOff className="text-base" /> : <FiEye className="text-base" />}
+                    {showConfirmPassword ? <FiEyeOff className="icon-base" /> : <FiEye className="icon-base" />}
                     </button>
                     {form.confirmPassword && (
-                      <div className="absolute right-10 top-1/2 -translate-y-1/2">
+                      <div className="login-confirm-status">
                         {form.password === form.confirmPassword ? (
-                          <FiCheckCircle className="text-emerald-400 text-base" />
+                          <FiCheckCircle className="login-validation-success" />
                         ) : (
-                          <FiAlertCircle className="text-red-400 text-base" />
+                          <FiAlertCircle className="login-validation-error" />
                         )}
                       </div>
                     )}
                   </div>
                   {form.confirmPassword && form.password !== form.confirmPassword && (
-                    <p className="errorText">Passwords do not match</p>
+                    <p className="login-error-text">Passwords do not match</p>
                   )}
                 </div>
               )}
@@ -543,15 +537,15 @@ const Login = ({ setUser }) => {
               <button
                 type="submit"
                 disabled={loading}
-                className={`${"submitBtn"} group`}
+                className="login-submit"
               >
                 {loading && (
-                  <div className="shimmerEffect" />
+                  <div className="login-shimmer" />
                 )}
                 {loading ? (
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <div className="login-submit-spinner" />
                 ) : (
-                  <span className="tracking-wide">
+                  <span className="login-submit-text">
                     {isRegister ? "Create Account" : "Sign In"}
                   </span>
                 )}
@@ -559,12 +553,12 @@ const Login = ({ setUser }) => {
             </form>
 
             {/* Toggle Mode */}
-            <div className="toggleContainer">
-              <p className="toggleText">
+            <div className="login-toggle-container">
+              <p className="login-toggle-text">
                 {isRegister ? "Already have an account?" : "Don't have an account?"}
                 <button
                   onClick={toggleMode}
-                  className="toggleBtn"
+                  className="login-toggle-button"
                   disabled={loading}
                 >
                   {isRegister ? "Sign In" : "Create Account"}
@@ -575,8 +569,8 @@ const Login = ({ setUser }) => {
         </div>
         
         {/* Footer */}
-        <div className="footer">
-          <p className="footerText">
+        <div className="login-footer">
+          <p className="login-footer-text">
             &copy; {new Date().getFullYear()} Schedule Management System
           </p>
         </div>
@@ -586,3 +580,4 @@ const Login = ({ setUser }) => {
 };
 
 export default Login;
+

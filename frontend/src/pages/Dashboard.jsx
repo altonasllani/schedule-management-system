@@ -1,19 +1,59 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import http from "../api/http";
 import {
-  FiBookOpen,
-  FiUsers,
-  FiUser,
-  FiMapPin,
-  FiCalendar,
-  FiSettings,
-  FiCheckCircle,
   FiActivity,
+  FiBookOpen,
+  FiCalendar,
+  FiCheckCircle,
+  FiChevronDown,
+  FiChevronLeft,
+  FiChevronRight,
   FiClock,
-  FiTrendingUp,
+  FiMapPin,
+  FiSettings,
+  FiUser,
+  FiUsers,
+  FiX,
 } from "react-icons/fi";
 
+const SESSIONS_API = "/catalog1/sessions";
+
+const weekDays = [
+  { id: 1, short: "Hën", label: "E Hënë" },
+  { id: 2, short: "Mar", label: "E Martë" },
+  { id: 3, short: "Mër", label: "E Mërkurë" },
+  { id: 4, short: "Enj", label: "E Enjte" },
+  { id: 5, short: "Pre", label: "E Premte" },
+  { id: 6, short: "Sht", label: "E Shtunë" },
+  { id: 7, short: "Die", label: "E Diel" },
+];
+
+const formatTime = (time) => (time ? String(time).slice(0, 5) : "--:--");
+const percentClass = (prefix, value) => `${prefix}-${Math.max(0, Math.min(100, Math.round(value)))}`;
+
+const toIsoDate = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const fromIsoDate = (isoDate) => {
+  const [year, month, day] = String(isoDate).split("-").map(Number);
+  return new Date(year, month - 1, day);
+};
+
+const shiftIsoDate = (isoDate, amount) => {
+  const nextDate = fromIsoDate(isoDate);
+  nextDate.setDate(nextDate.getDate() + amount);
+  return toIsoDate(nextDate);
+};
+
 const Dashboard = () => {
+  const calendarRef = useRef(null);
+
+  const [currentDateIso, setCurrentDateIso] = useState(() => toIsoDate(new Date()));
   const [stats, setStats] = useState({
     courses: 0,
     groups: 0,
@@ -22,28 +62,89 @@ const Dashboard = () => {
     rooms: 0,
     activeSemesters: 0,
   });
-
   const [activities, setActivities] = useState([]);
+  const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [scheduleLoading, setScheduleLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState(() => toIsoDate(new Date()));
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+
+  const fetchDashboardData = async () => {
+    try {
+      const [statsRes, activitiesRes] = await Promise.all([
+        http.get("/dashboard/stats"),
+        http.get("/dashboard/activities"),
+      ]);
+      setStats(statsRes.data);
+      setActivities(Array.isArray(activitiesRes.data) ? activitiesRes.data : []);
+    } catch (err) {
+      console.error("Failed to fetch live dashboard data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchScheduleData = async () => {
+    setScheduleLoading(true);
+    try {
+      const res = await http.get(SESSIONS_API);
+      setSessions(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("Failed to fetch schedule sessions:", err);
+      setSessions([]);
+    } finally {
+      setScheduleLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const [statsRes, activitiesRes] = await Promise.all([
-          http.get("/dashboard/stats"),
-          http.get("/dashboard/activities"),
-        ]);
-        setStats(statsRes.data);
-        setActivities(activitiesRes.data);
-      } catch (err) {
-        console.error("Failed to fetch live dashboard data:", err);
-      } finally {
-        setLoading(false);
+    fetchDashboardData();
+    fetchScheduleData();
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (calendarRef.current && !calendarRef.current.contains(event.target)) {
+        setIsCalendarOpen(false);
       }
     };
 
-    fetchDashboardData();
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setIsCalendarOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
   }, []);
+
+  useEffect(() => {
+    const scheduleNextMidnightUpdate = () => {
+      const now = new Date();
+      const nextMidnight = new Date(now);
+      nextMidnight.setHours(24, 0, 0, 0);
+
+      return window.setTimeout(() => {
+        const nextIsoDate = toIsoDate(new Date());
+
+        setCurrentDateIso((previousIso) => {
+          setSelectedDate((previousSelectedDate) =>
+            previousSelectedDate === previousIso ? nextIsoDate : previousSelectedDate
+          );
+          return nextIsoDate;
+        });
+      }, nextMidnight.getTime() - now.getTime() + 1000);
+    };
+
+    const timeoutId = scheduleNextMidnightUpdate();
+    return () => window.clearTimeout(timeoutId);
+  }, [currentDateIso]);
 
   const statCards = [
     { title: "Kurse Totale", value: stats.courses, icon: <FiBookOpen />, color: "blue" },
@@ -56,128 +157,387 @@ const Dashboard = () => {
 
   const getColorClasses = (color) => {
     const classes = {
-      blue: "text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-500/20 border-blue-200 dark:border-blue-500/30 group-hover:shadow-blue-500/20",
-      emerald: "text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/20 border-emerald-200 dark:border-emerald-500/30 group-hover:shadow-emerald-500/20",
-      purple: "text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-500/20 border-purple-200 dark:border-purple-500/30 group-hover:shadow-purple-500/20",
-      amber: "text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/20 border-amber-200 dark:border-amber-500/30 group-hover:shadow-amber-500/20",
-      rose: "text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-500/20 border-rose-200 dark:border-rose-500/30 group-hover:shadow-rose-500/20",
-      indigo: "text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-500/20 border-indigo-200 dark:border-indigo-500/30 group-hover:shadow-indigo-500/20",
+      blue: "stat-color-blue",
+      emerald: "stat-color-emerald",
+      purple: "stat-color-purple",
+      amber: "stat-color-amber",
+      rose: "stat-color-rose",
+      indigo: "stat-color-indigo",
     };
     return classes[color];
   };
 
+  const totalStats = Object.values(stats).reduce((sum, value) => sum + Number(value || 0), 0);
+
+  const statisticRows = statCards.map((stat) => {
+    const value = Number(stat.value || 0);
+    const percentage = totalStats > 0 ? Math.round((value / totalStats) * 100) : 0;
+
+    return {
+      ...stat,
+      value,
+      percentage,
+      status: value > 0 ? "Aktiv" : "Pa të dhëna",
+    };
+  });
+
+  const scheduleOverview = useMemo(() => {
+    const dayRows = weekDays.map((day) => {
+      const daySessions = sessions
+        .filter((session) => Number(session.day_of_week) === day.id)
+        .sort((a, b) => String(a.start_time || "").localeCompare(String(b.start_time || "")));
+
+      return {
+        ...day,
+        sessions: daySessions,
+        count: daySessions.length,
+      };
+    });
+
+    const maxCount = Math.max(...dayRows.map((day) => day.count), 1);
+    const busiestDay = dayRows.reduce((top, day) => (day.count > top.count ? day : top), dayRows[0]);
+    const currentDate = fromIsoDate(currentDateIso);
+    const todayId = currentDate.getDay() === 0 ? 7 : currentDate.getDay();
+    const today = dayRows.find((day) => day.id === todayId) || dayRows[0];
+
+    return { dayRows, maxCount, busiestDay, today };
+  }, [currentDateIso, sessions]);
+
+  const selectedDateValue = useMemo(() => fromIsoDate(selectedDate), [selectedDate]);
+  const selectedDayId = selectedDateValue.getDay() === 0 ? 7 : selectedDateValue.getDay();
+  const selectedDaySchedule =
+    scheduleOverview.dayRows.find((day) => day.id === selectedDayId) || scheduleOverview.today;
+  const isTodaySelected = selectedDate === currentDateIso;
+
+  const selectedDateLabel = selectedDateValue.toLocaleDateString("sq-AL", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+
+  const selectedDateShort = selectedDateValue.toLocaleDateString("sq-AL", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+
+  const quickActions = [
+    {
+      label: "Shto Kurs",
+      icon: <FiBookOpen className="quick-blue" />,
+      path: "/courses",
+    },
+    { label: "Krijo Grup", icon: <FiUsers className="quick-emerald" />, path: "/groups" },
+    { label: "Cakto Orar", icon: <FiCalendar className="quick-amber" />, path: "/timetable" },
+    { label: "Shto Profesor", icon: <FiUser className="quick-purple" />, path: "/professors" },
+  ];
+
   return (
     <div className="page-container">
-      <div className="page-header">
-        <div>
+      <div className="dashboard-header">
+        <div className="dashboard-header-copy">
           <h1 className="page-title">Përmbledhja e Sistemit</h1>
           <p className="page-subtitle">
             Shikoni statistikat dhe menaxhoni aktivitetet për semestrin aktual.
           </p>
         </div>
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-800/50 backdrop-blur-md px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 shadow-sm flex items-center gap-2">
-          <FiCalendar className="text-emerald-500" />
-          {new Date().toLocaleDateString("sq-AL", { month: "long", day: "numeric", year: "numeric" })}
+
+        <div className="dashboard-date-wrap" ref={calendarRef}>
+          <button
+            type="button"
+            className="dashboard-date dashboard-date-button"
+            onClick={() => setIsCalendarOpen((open) => !open)}
+            aria-expanded={isCalendarOpen}
+            aria-label="Hap kalendarin"
+          >
+            <FiCalendar className="icon-emerald" />
+            <span>{selectedDateShort}</span>
+            <FiChevronDown className={`dashboard-date-chevron ${isCalendarOpen ? "dashboard-date-chevron-open" : ""}`} />
+          </button>
+
+          {isCalendarOpen && (
+            <div className="dashboard-calendar-popover">
+              <div className="dashboard-calendar-head">
+                <div>
+                  <p className="dashboard-calendar-label">Data e zgjedhur</p>
+                  <p className="dashboard-calendar-value">{selectedDateLabel}</p>
+                </div>
+                <button
+                  type="button"
+                  className="dashboard-calendar-close"
+                  onClick={() => setIsCalendarOpen(false)}
+                  aria-label="Mbyll kalendarin"
+                >
+                  <FiX />
+                </button>
+              </div>
+
+              <div className="dashboard-calendar-nav">
+                <button
+                  type="button"
+                  className="dashboard-calendar-shift"
+                  onClick={() => setSelectedDate((current) => shiftIsoDate(current, -1))}
+                  aria-label="Dita paraprake"
+                >
+                  <FiChevronLeft />
+                </button>
+
+                <input
+                  type="date"
+                  className="dashboard-calendar-input"
+                  value={selectedDate}
+                  onChange={(event) => setSelectedDate(event.target.value)}
+                />
+
+                <button
+                  type="button"
+                  className="dashboard-calendar-shift"
+                  onClick={() => setSelectedDate((current) => shiftIsoDate(current, 1))}
+                  aria-label="Dita tjetër"
+                >
+                  <FiChevronRight />
+                </button>
+              </div>
+
+              <div className="dashboard-calendar-actions">
+                <button
+                  type="button"
+                  className="dashboard-calendar-action dashboard-calendar-action-muted"
+                  onClick={() => setSelectedDate(currentDateIso)}
+                >
+                  Sot
+                </button>
+                <button
+                  type="button"
+                  className="dashboard-calendar-action dashboard-calendar-action-primary"
+                  onClick={() => setIsCalendarOpen(false)}
+                >
+                  Apliko
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-5 mb-8">
+      <div className="dashboard-stats">
         {statCards.map((stat) => (
-          <div
-            key={stat.title}
-            className="card p-5 !rounded-2xl transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl group cursor-default"
-          >
-            <div className="flex justify-between items-start mb-4">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl transition-all duration-300 transform group-hover:scale-110 group-hover:rotate-3 ${getColorClasses(stat.color)} border`}>
-                {stat.icon}
-              </div>
+          <div key={stat.title} className="dashboard-stat-card">
+            <div className="dashboard-stat-icon-wrap">
+              <div className={`dashboard-stat-icon ${getColorClasses(stat.color)}`}>{stat.icon}</div>
             </div>
-            <p className="text-3xl font-extrabold text-slate-800 dark:text-slate-100 mb-1 tracking-tight">
-              {loading ? (
-                <span className="inline-block w-6 h-6 border-2 border-slate-200 dark:border-slate-700 border-t-emerald-500 rounded-full animate-spin" />
-              ) : (
-                stat.value
-              )}
-            </p>
-            <h3 className="text-slate-500 dark:text-slate-400 text-sm font-medium">{stat.title}</h3>
+            <p className="dashboard-stat-value">{loading ? <span className="dashboard-spinner" /> : stat.value}</p>
+            <h3 className="dashboard-stat-title">{stat.title}</h3>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
-          <div className="card">
-            <div className="card-header border-none mb-6">
-              <div>
-                <h2 className="card-title">Menaxhimi i Shpejtë</h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Veprimet më të përdorura për administrim.</p>
+      <div className="dashboard-grid">
+        <div className="dashboard-main">
+          <div className="crud-card dashboard-panel">
+            <div className="dashboard-panel-header">
+              <div className="card-header-tight">
+                <div>
+                  <h2 className="card-title">Tabela e Statistikave</h2>
+                  <p className="section-note">Përmbledhje numerike e moduleve kryesore në sistem.</p>
+                </div>
+                <span className="badge badge-info">{totalStats} rekorde</span>
               </div>
-              <button className="text-emerald-600 dark:text-emerald-400 text-sm font-semibold hover:text-emerald-500 hover:underline flex items-center gap-1">
-                Krijo të re <FiSettings className="ml-1" />
-              </button>
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {[
-                { label: "Shto Kurs", icon: <FiBookOpen className="text-2xl mb-3 text-blue-500" /> },
-                { label: "Krijo Grup", icon: <FiUsers className="text-2xl mb-3 text-emerald-500" /> },
-                { label: "Cakto Orar", icon: <FiCalendar className="text-2xl mb-3 text-amber-500" /> },
-                { label: "Shto Profesor", icon: <FiUser className="text-2xl mb-3 text-purple-500" /> },
-              ].map((action) => (
-                <button
-                  key={action.label}
-                  className="flex flex-col items-center justify-center p-5 rounded-2xl border border-slate-200 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-800/30 hover:border-emerald-300 dark:hover:border-emerald-500/50 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 hover:shadow-lg transition-all group"
-                >
-                  <div className="transform transition-transform duration-300 group-hover:-translate-y-1">
-                    {action.icon}
+            <div className="dashboard-panel-body">
+              <div className="stats-detail-grid">
+                <div className="chart-panel">
+                  <div className="chart-header">
+                    <div>
+                      <p className="metric-label">Ngarkesa e Orarit</p>
+                      <h3 className="metric-value">{scheduleLoading ? "..." : `${sessions.length} seanca`}</h3>
+                    </div>
+                    <span className="badge-inline">
+                      <FiClock />
+                      Java
+                    </span>
                   </div>
-                  <span className="font-semibold text-sm text-slate-700 dark:text-slate-300 group-hover:text-emerald-600 dark:group-hover:text-emerald-400">{action.label}</span>
-                </button>
+
+                  <div className="chart-box">
+                    <div className="chart-grid">
+                      {scheduleOverview.dayRows.map((day) => {
+                        const height =
+                          day.count > 0 ? Math.max(18, (day.count / scheduleOverview.maxCount) * 100) : 8;
+
+                        return (
+                          <div key={day.id} className="chart-day">
+                            <div className="chart-bar-wrap">
+                              <div
+                                className={`chart-bar ${percentClass("h-pct", height)} ${
+                                  day.count > 0 ? "chart-bar-active" : "chart-bar-empty"
+                                }`}
+                              />
+                              <span className="chart-count">{scheduleLoading ? "-" : day.count}</span>
+                            </div>
+                            <span className="chart-day-label">{day.short}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="chart-footnote">
+                    <span className="chart-footnote-label">Dita më e ngarkuar:</span>
+                    <span className="badge badge-success">
+                      {scheduleLoading
+                        ? "Duke ngarkuar"
+                        : `${scheduleOverview.busiestDay.label} · ${scheduleOverview.busiestDay.count} seanca`}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="today-panel">
+                  <div className="today-header">
+                    <div>
+                      <p className="metric-label">
+                        {isTodaySelected ? "Orari i sotëm" : "Orari për datën e zgjedhur"}
+                      </p>
+                      <h3 className="today-title">{selectedDaySchedule.label}</h3>
+                    </div>
+                    <span className="badge badge-info">{selectedDaySchedule.count} seanca</span>
+                  </div>
+
+                  <div className="today-list">
+                    {scheduleLoading &&
+                      [0, 1, 2].map((item) => <div key={item} className="today-skeleton" />)}
+
+                    {!scheduleLoading &&
+                      selectedDaySchedule.sessions.slice(0, 4).map((session) => (
+                        <div key={session.id} className="today-session">
+                          <div className="today-session-row">
+                            <h4 className="today-session-title">{session.course_name || "Kurs pa emër"}</h4>
+                            <span className="today-session-time">
+                              {formatTime(session.start_time)}-{formatTime(session.end_time)}
+                            </span>
+                          </div>
+                          <p className="today-session-meta">
+                            {session.group_name || "Grup"} · {session.room_name || "Dhomë"} ·{" "}
+                            {session.professor_name || "Profesor"}
+                          </p>
+                        </div>
+                      ))}
+
+                    {!scheduleLoading && selectedDaySchedule.sessions.length === 0 && (
+                      <div className="empty-state">
+                        <FiCalendar className="empty-icon" />
+                        <p className="metric-label">
+                          {isTodaySelected ? "Nuk ka orar për sot." : "Nuk ka orar për këtë datë."}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="dashboard-table-wrap">
+              <div className="table-panel">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th className="table-th">Moduli</th>
+                      <th className="table-th">Totali</th>
+                      <th className="table-th">Pesha</th>
+                      <th className="table-th-right">Statusi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {statisticRows.map((row) => (
+                      <tr key={row.title} className="table-tr">
+                        <td className="table-td">
+                          <div className="module-cell">
+                            <div className={`module-icon ${getColorClasses(row.color)}`}>{row.icon}</div>
+                            <span className="module-title">{row.title}</span>
+                          </div>
+                        </td>
+                        <td className="table-td text-strong">{loading ? "..." : row.value}</td>
+                        <td className="table-td weight-cell">
+                          <div className="module-cell">
+                            <div className="weight-track">
+                              <div className={`weight-fill ${percentClass("w-pct", row.percentage)}`} />
+                            </div>
+                            <span className="chart-day-label">{loading ? "--" : `${row.percentage}%`}</span>
+                          </div>
+                        </td>
+                        <td className="table-td-right">
+                          <span className={`badge ${row.value > 0 ? "badge-success" : "badge-warning"}`}>
+                            {loading ? "Duke ngarkuar" : row.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="card-header card-header-plain">
+              <div>
+                <h2 className="card-title">Menaxhimi i Shpejtë</h2>
+                <p className="section-note">Veprimet më të përdorura për administrim.</p>
+              </div>
+              <Link to="/courses" className="quick-header-link">
+                Krijo të re <FiSettings className="quick-link-icon" />
+              </Link>
+            </div>
+
+            <div className="quick-grid">
+              {quickActions.map((action) => (
+                <Link key={action.label} to={action.path} className="quick-action">
+                  <div className="quick-action-icon-wrap">{action.icon}</div>
+                  <span className="quick-action-text">{action.label}</span>
+                </Link>
               ))}
             </div>
           </div>
 
           <div className="card">
-            <div className="card-header border-b border-slate-100 dark:border-slate-700/50 pb-4 mb-6">
+            <div className="card-header card-header-bordered">
               <div>
                 <h2 className="card-title">Aktivitetet e fundit</h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Ndryshimet e fundit në sistem.</p>
+                <p className="section-note">Ndryshimet e fundit në sistem.</p>
               </div>
               <span className="badge badge-info">Sot</span>
             </div>
 
-            <div className="space-y-4">
+            <div className="activity-list">
               {loading && (
-                <div className="space-y-3">
+                <div className="today-list">
                   {[0, 1, 2].map((item) => (
-                     <div key={item} className="h-16 bg-slate-100 dark:bg-slate-800/50 rounded-xl animate-pulse" />
+                    <div key={item} className="activity-skeleton" />
                   ))}
                 </div>
               )}
 
               {activities.length === 0 && !loading && (
-                <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800/50 rounded-full flex items-center justify-center mb-3">
-                    <FiActivity className="text-slate-400 dark:text-slate-500 text-2xl" />
+                <div className="activity-empty">
+                  <div className="activity-empty-icon">
+                    <FiActivity className="activity-empty-icon-svg" />
                   </div>
-                  <p className="text-slate-500 dark:text-slate-400 font-medium">Nuk ka aktivitete të fundit.</p>
+                  <p className="activity-empty-text">Nuk ka aktivitete të fundit.</p>
                 </div>
               )}
 
               {!loading &&
                 activities.map((item, idx) => (
-                  <div
-                    key={`${item.title}-${idx}`}
-                    className="flex gap-4 items-start p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-xl transition-all border border-transparent hover:border-slate-100 dark:hover:border-slate-700/50 group"
-                  >
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-500/20 group-hover:scale-110 transition-transform">
+                  <div key={`${item.title}-${idx}`} className="activity-item">
+                    <div className="activity-icon">
                       <FiActivity />
                     </div>
                     <div>
-                      <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{item.title}</h4>
-                      <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">{item.desc}</p>
-                      <span className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1 mt-1 font-medium">
-                        <FiClock className="text-xs" /> {item.time}
+                      <h4 className="activity-title">{item.title}</h4>
+                      <p className="activity-desc">{item.desc}</p>
+                      <span className="activity-time">
+                        <FiClock className="clock-tiny" /> {item.time}
                       </span>
                     </div>
                   </div>
@@ -186,23 +546,21 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="space-y-8">
+        <div className="dashboard-side">
           <div className="card">
-            <h2 className="card-title mb-6 border-b border-slate-100 dark:border-slate-700/50 pb-4">
-              Statusi i Sistemit
-            </h2>
+            <h2 className="system-card-title">Statusi i Sistemit</h2>
 
-            <div className="space-y-4">
+            <div className="today-list">
               {[
-                { name: "Server Status", status: "Online", statusColor: "text-emerald-600 dark:text-emerald-400" },
-                { name: "Database", status: "Active", statusColor: "text-emerald-600 dark:text-emerald-400" },
-                { name: "API Gateway", status: "Running", statusColor: "text-emerald-600 dark:text-emerald-400" },
-                { name: "Sync Status", status: "Live", statusColor: "text-blue-600 dark:text-blue-400" },
+                { name: "Server Status", status: "Online", statusColor: "status-emerald" },
+                { name: "Database", status: "Active", statusColor: "status-emerald" },
+                { name: "API Gateway", status: "Running", statusColor: "status-emerald" },
+                { name: "Sync Status", status: "Live", statusColor: "status-blue" },
               ].map((sys) => (
-                <div key={sys.name} className="flex items-center justify-between p-3.5 rounded-xl border border-slate-100 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-800/30 hover:border-slate-300 dark:hover:border-slate-600 transition-colors">
-                  <span className="text-slate-700 dark:text-slate-300 text-sm font-semibold">{sys.name}</span>
-                  <span className={`text-xs font-bold ${sys.statusColor} flex items-center gap-2`}>
-                    <span className="w-2 h-2 rounded-full bg-current shadow-[0_0_8px_currentColor] animate-pulse" />
+                <div key={sys.name} className="system-row">
+                  <span className="system-name">{sys.name}</span>
+                  <span className={`system-status ${sys.statusColor}`}>
+                    <span className="system-dot" />
                     {sys.status}
                   </span>
                 </div>
@@ -210,19 +568,18 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="card relative overflow-hidden border-emerald-200 dark:border-emerald-500/20 group">
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 dark:from-emerald-500/10 to-teal-50 dark:to-teal-500/5 opacity-50 dark:opacity-100 transition-opacity"></div>
-            <div className="relative z-10">
-              <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-500/20 rounded-2xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 mb-5 border border-emerald-200 dark:border-emerald-500/30 shadow-lg shadow-emerald-500/10 dark:shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-                <FiCheckCircle className="text-2xl" />
+          <div className="health-card">
+            <div className="health-bg" />
+            <div className="health-content">
+              <div className="health-icon">
+                <FiCheckCircle className="icon-2xl" />
               </div>
-              <h3 className="text-xl font-extrabold mb-2 text-slate-800 dark:text-slate-100 tracking-tight">Gjithçka po funksionon</h3>
-              <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed mb-6 font-medium">
-                Sistemi juaj është i përditësuar. Nuk ka asnjë konflikt në orarin e sotëm të leksioneve. Raportet tregojnë stabilitet makimal.
+              <h3 className="health-title">Gjithçka po funksionon</h3>
+              <p className="health-text">
+                Sistemi juaj është i përditësuar. Nuk ka asnjë konflikt në orarin e sotëm të leksioneve.
+                Raportet tregojnë stabilitet maksimal.
               </p>
-              <button className="btn btn-primary w-full shadow-lg hover:shadow-xl dark:group-hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all">
-                Shiko Raportin e Detajuar
-              </button>
+              <button className="health-button">Shiko Raportin e Detajuar</button>
             </div>
           </div>
         </div>

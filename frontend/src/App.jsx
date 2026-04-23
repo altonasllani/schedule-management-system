@@ -2,6 +2,8 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import Courses from "./pages/Courses";
+import Timetable from "./pages/Timetable";
 import MainLayout from "./layout/MainLayout";
 import http from "./api/http";
 
@@ -42,10 +44,10 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-center">
-          <div className="h-16 w-16 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto mb-4 shadow-sm"></div>
-          <p className="text-slate-600 font-semibold tracking-wide">Loading Schedule System...</p>
+      <div className="app-loading">
+        <div className="app-loading-panel">
+          <div className="app-loading-spinner"></div>
+          <p className="app-loading-text">Loading Schedule System...</p>
         </div>
       </div>
     );
@@ -63,9 +65,8 @@ function App() {
       >
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
-        
-        {/* Fut rrugë të tjera për faqet: Courses, Groups, Professors... */}
-        {/* <Route path="courses" element={<Courses />} /> */}
+        <Route path="courses" element={<Courses />} />
+        <Route path="timetable" element={<Timetable />} />
       </Route>
 
       {/* Fallback */}

@@ -2,7 +2,7 @@ import { NavLink } from "react-router-dom";
 
 const Sidebar = () => {
   return (
-    <aside className="w-60 bg-slate-800 text-slate-200 p-5 space-y-3">
+    <aside className="legacy-sidebar">
       {[
         ["Dashboard", "/dashboard"],
         ["Courses", "/courses"],
@@ -16,11 +16,7 @@ const Sidebar = () => {
           key={path}
           to={path}
           className={({ isActive }) =>
-            `block px-3 py-2 rounded-md text-sm ${
-              isActive
-                ? "bg-slate-700 text-white"
-                : "hover:bg-slate-700"
-            }`
+            `legacy-sidebar-link ${isActive ? "legacy-sidebar-link-active" : "legacy-sidebar-link-default"}`
           }
         >
           {label}
